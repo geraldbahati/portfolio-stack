@@ -1,0 +1,29 @@
+{
+  "name": "web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "astro check",
+    "astro": "astro",
+    "dev:bare": "astro dev"
+  },
+  "dependencies": {
+    "@orpc/client": "catalog:",
+    "@portfolio-stack/api": "workspace:*",
+    "@portfolio-stack/env": "workspace:*",
+    "astro": "^7.1.5",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@alchemy.run/cloudflare-frameworks": "2.0.0-beta.72",
+    "@astrojs/check": "^0.9.10",
+    "@cloudflare/workers-types": "catalog:",
+    "@portfolio-stack/config": "workspace:*",
+    "@tailwindcss/vite": "^4.3.3",
+    "tailwindcss": "^4.3.3",
+    "typescript": "catalog:"
+  }
+}
