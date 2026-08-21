@@ -1,5 +1,4 @@
 ---
-import { authClient } from "../lib/auth-client";
 ---
 
 <div class="mx-auto mt-10 w-full max-w-md p-6">
@@ -42,11 +41,6 @@ import { authClient } from "../lib/auth-client";
     </button>
   </form>
 
-  <div class="mt-4 text-center">
-    <a href="/signup" class="text-indigo-400 hover:text-indigo-300 text-sm">
-      Need an account? Sign Up
-    </a>
-  </div>
 </div>
 
 <script>
@@ -73,7 +67,8 @@ import { authClient } from "../lib/auth-client";
         },
         {
           onSuccess: () => {
-            window.location.href = "/dashboard";
+            const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+            window.location.href = returnTo?.startsWith("/admin") ? returnTo : "/admin";
           },
           onError: (ctx) => {
             formError.textContent = ctx.error.message || "Sign in failed. Please try again.";
