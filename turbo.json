@@ -1,5 +1,13 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": [
+    "E2E_BASE_URL",
+    "SENTRY_AUTH_TOKEN",
+    "SENTRY_ORG",
+    "SENTRY_PROJECT",
+    "SERVER_URL",
+    "WEB_URL"
+  ],
   "ui": "tui",
   "tasks": {
     "build": {
@@ -18,8 +26,7 @@
       "persistent": true
     },
     "db:generate": {
-      "cache": false,
-      "interactive": true
+      "cache": false
     },
     "deploy": {
       "cache": false,

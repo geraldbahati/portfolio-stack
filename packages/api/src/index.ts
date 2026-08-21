@@ -1,4 +1,6 @@
 import { ORPCError, os } from "@orpc/server";
+import { isAdminEnabled, isAllowedAdminEmail } from "@portfolio-stack/auth/admin";
+import { env } from "@portfolio-stack/env/server";
 
 import type { Context } from "./context";
 
@@ -18,3 +20,25 @@ const requireAuth = o.middleware(async ({ context, next }) => {
 });
 
 export const protectedProcedure = publicProcedure.use(requireAuth);
+
+const requireAdmin = o.middleware(async ({ context, next }) => {
+  if (!context.session?.user) {
+    throw new ORPCError("UNAUTHORIZED");
+  }
+
+  if (!isAdminEnabled(env.ENABLE_ADMIN)) {
+    throw new ORPCError("FORBIDDEN");
+  }
+
+  if (!isAllowedAdminEmail(context.session.user.email)) {
+    throw new ORPCError("FORBIDDEN");
+  }
+
+  return next({
+    context: {
+      session: context.session,
+    },
+  });
+});
+
+export const adminProcedure = publicProcedure.use(requireAdmin);

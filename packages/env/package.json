@@ -17,5 +17,8 @@
     "@portfolio-stack/infra": "workspace:*",
     "@types/node": "catalog:",
     "typescript": "catalog:"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   }
 }

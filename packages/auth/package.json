@@ -5,16 +5,25 @@
     ".": {
       "default": "./src/index.ts"
     },
+    "./admin": {
+      "default": "./src/admin.ts"
+    },
+    "./origins": {
+      "default": "./src/origins.ts"
+    },
     "./*": {
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
   "dependencies": {
     "@portfolio-stack/db": "workspace:*",
     "@portfolio-stack/env": "workspace:*",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
+    "drizzle-orm": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

@@ -1,0 +1,35 @@
+{
+  "name": "@portfolio-stack/analytics",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./consent": {
+      "default": "./src/consent.ts"
+    },
+    "./events": {
+      "default": "./src/events.ts"
+    },
+    "./server": {
+      "default": "./src/server.ts"
+    },
+    "./posthog-client": {
+      "default": "./src/posthog-client.ts"
+    },
+    "./sentry": {
+      "default": "./src/sentry.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "posthog-js": "^1.407.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@portfolio-stack/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

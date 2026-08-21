@@ -5,13 +5,17 @@
     ".": {
       "default": "./src/index.ts"
     },
+    "./schema/auth": {
+      "default": "./src/schema/auth.ts"
+    },
     "./*": {
       "default": "./src/*.ts"
     }
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
-    "db:migrate:deploy": "drizzle-kit migrate"
+    "db:migrate:deploy": "drizzle-kit migrate",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@libsql/client": "0.17.4",

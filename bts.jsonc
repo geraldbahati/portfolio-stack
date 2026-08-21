@@ -17,12 +17,12 @@
   "runtime": "workers",
   "frontend": ["astro"],
   "addons": ["turborepo"],
-  "examples": ["todo"],
+  "examples": [],
   "auth": "better-auth",
   "payments": "none",
   "packageManager": "bun",
   "dbSetup": "d1",
   "api": "orpc",
   "webDeploy": "cloudflare",
-  "serverDeploy": "cloudflare",
+  "serverDeploy": "cloudflare"
 }

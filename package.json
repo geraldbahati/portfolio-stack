@@ -26,6 +26,14 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "check-types": "turbo run check-types",
+    "lint": "biome check .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "verify:deployment": "bun scripts/verify-deployment.ts",
+    "check": "bun run lint && bun run check-types && bun run test",
+    "db:seed-admin": "bun packages/auth/src/seed-admin-cli.ts",
+    "db:seed-projects": "bun packages/db/src/seed-projects-cli.ts",
     "dev:web": "turbo run dev -F web --",
     "dev:server": "turbo run dev -F server --",
     "db:generate": "turbo run db:generate -F @portfolio-stack/db --",
@@ -35,14 +43,20 @@
   "dependencies": {
     "@portfolio-stack/env": "workspace:*",
     "dotenv": "catalog:",
+    "marked": "^18.0.10",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@biomejs/biome": "^2.3.8",
     "@cloudflare/workers-types": "catalog:",
+    "@playwright/test": "^1.62.1",
     "@portfolio-stack/config": "workspace:*",
     "@types/node": "catalog:",
+    "happy-dom": "^20.8.4",
     "turbo": "^2.10.7",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^4.1.10"
   },
   "packageManager": "bun@1.3.13"
 }
