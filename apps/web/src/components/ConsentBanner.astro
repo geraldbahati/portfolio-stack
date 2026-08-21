@@ -1,0 +1,49 @@
+<div
+  id="consent-banner"
+  hidden
+  class="animate-consent-slide-up fixed inset-x-0 bottom-0 z-[60] border-t border-white/15 bg-black/95 p-6 text-white backdrop-blur-sm"
+>
+  <div class="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <p id="consent-description" class="max-w-2xl text-sm text-neutral-300">
+      Privacy-friendly analytics, hosted in the EU. Nothing is stored until you choose.{" "}
+      <a href="/privacy" class="border-b border-white/40 text-white hover:border-white">Privacy policy</a>
+    </p>
+    <div class="flex shrink-0 gap-6">
+      <button
+        type="button"
+        data-consent="rejected"
+        class="text-sm uppercase tracking-widest text-white/80 hover:text-white"
+      >
+        Decline
+      </button>
+      <button
+        type="button"
+        data-consent="accepted"
+        class="text-sm uppercase tracking-widest text-white/80 hover:text-white"
+      >
+        Accept
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { applyConsent } from "@portfolio-stack/analytics/posthog-client";
+  import { getConsent, setConsent } from "@portfolio-stack/analytics/consent";
+
+  const banner = document.getElementById("consent-banner");
+  const enabled = document.documentElement.dataset.posthogEnabled === "true";
+
+  if (banner && enabled && getConsent() === "pending") {
+    banner.hidden = false;
+  }
+
+  banner?.querySelectorAll<HTMLButtonElement>("[data-consent]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const decision = button.dataset.consent === "accepted" ? "accepted" : "rejected";
+      setConsent(decision);
+      void applyConsent(decision);
+      banner.hidden = true;
+    });
+  });
+</script>

@@ -1,0 +1,48 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+import { IMAGE_PRESETS } from "../../lib/image-presets";
+
+interface Props {
+  image: ImageMetadata;
+  title: string;
+  index: number;
+}
+
+const { image, title, index } = Astro.props;
+const widths = [...IMAGE_PRESETS.service.widths];
+const sizes = IMAGE_PRESETS.service.sizes;
+const quality = IMAGE_PRESETS.service.quality;
+---
+
+<div
+  data-image-panel
+  class="service-panel"
+  style={`--i: ${index}; z-index: ${index + 1}`}
+>
+  <Image
+    src={image}
+    alt=""
+    widths={widths}
+    sizes={sizes}
+    quality={quality}
+    loading="lazy"
+    decoding="async"
+    fetchpriority="low"
+    class="service-panel__bg"
+    aria-hidden="true"
+  />
+  <div class="service-panel__shot">
+    <Image
+      src={image}
+      alt={title}
+      widths={widths}
+      sizes={sizes}
+      quality={quality}
+      loading="lazy"
+      decoding="async"
+      fetchpriority="low"
+      class="service-panel__photo"
+    />
+  </div>
+</div>

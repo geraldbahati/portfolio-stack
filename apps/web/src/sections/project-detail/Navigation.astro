@@ -1,0 +1,69 @@
+---
+import type { PublishedCaseStudy } from "@portfolio-stack/api/routers/projects";
+
+import { ALL_PROJECTS_LABEL, BACK_OVERVIEW, NEXT_LABEL, PREV_LABEL } from "./copy";
+
+interface Props {
+  previous: PublishedCaseStudy["previous"];
+  next: PublishedCaseStudy["next"];
+}
+
+const { previous, next } = Astro.props;
+---
+
+{
+  (previous || next) && (
+    <nav class="w-full border-t border-black/10 bg-background" aria-label="Case study navigation">
+      <div class="flex w-full justify-center px-4">
+        <div class="flex w-full max-w-6xl flex-col items-stretch justify-between gap-8 py-12 md:flex-row">
+          <div class="flex-1">
+            {previous ? (
+              <a href={`/projects/${previous.id}`} class="group flex h-full flex-col items-start gap-2 text-muted-foreground transition-colors hover:text-foreground" data-reveal="left">
+                <span class="flex items-center gap-2 text-sm font-medium tracking-wider uppercase">
+                  <svg class="h-4 w-4 transition-transform group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                  </svg>
+                  {PREV_LABEL}
+                </span>
+                <span class="line-clamp-2 text-xl font-semibold text-foreground">{previous.title}</span>
+              </a>
+            ) : (
+              <a href="/projects" class="group flex h-full flex-col items-start gap-2 text-muted-foreground transition-colors hover:text-foreground" data-reveal="left">
+                <span class="flex items-center gap-2 text-sm font-medium tracking-wider uppercase">
+                  <svg class="h-4 w-4 transition-transform group-hover:-translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                  </svg>
+                  {ALL_PROJECTS_LABEL}
+                </span>
+                <span class="text-xl font-semibold text-foreground">{BACK_OVERVIEW}</span>
+              </a>
+            )}
+          </div>
+          <div class="flex flex-1 justify-end">
+            {next ? (
+              <a href={`/projects/${next.id}`} class="group flex h-full flex-col items-end gap-2 text-right text-muted-foreground transition-colors hover:text-foreground" data-reveal="right">
+                <span class="flex items-center gap-2 text-sm font-medium tracking-wider uppercase">
+                  {NEXT_LABEL}
+                  <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M5 12h14M12 5l7 7-7 7"></path>
+                  </svg>
+                </span>
+                <span class="line-clamp-2 text-xl font-semibold text-foreground">{next.title}</span>
+              </a>
+            ) : (
+              <a href="/projects" class="group flex h-full flex-col items-end gap-2 text-right text-muted-foreground transition-colors hover:text-foreground" data-reveal="right">
+                <span class="flex items-center gap-2 text-sm font-medium tracking-wider uppercase">
+                  {ALL_PROJECTS_LABEL}
+                  <svg class="h-4 w-4 transition-transform group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M5 12h14M12 5l7 7-7 7"></path>
+                  </svg>
+                </span>
+                <span class="text-xl font-semibold text-foreground">{BACK_OVERVIEW}</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+    </nav>
+  )
+}

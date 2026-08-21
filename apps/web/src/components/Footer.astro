@@ -1,0 +1,89 @@
+---
+const year = new Date().getFullYear();
+
+const brand = {
+  name: "Gerald Bahati.",
+  tagline: "Full-Stack Software Engineer",
+};
+
+const contact = {
+  location: "Based in Nairobi, Kenya",
+  link: { text: "make contact", url: "/contact" },
+};
+
+const accessibility = {
+  hours: "Mon – Fri: 9:00 - 18:00",
+  availability: "Async communication via Email",
+};
+
+const legal = [
+  { name: "Imprint", url: "/imprint" },
+  { name: "Data protection", url: "/privacy" },
+];
+---
+
+<footer class="bg-black text-white">
+  <div class="flex justify-center pt-24 pb-4">
+    <div class="h-px w-full max-w-7xl bg-white/50" role="separator"></div>
+  </div>
+
+  <div class="mx-auto max-w-7xl px-6 py-16 lg:px-8" data-footer-grid>
+    <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="footer-reveal" style="animation-delay: 0.1s">
+        <h2 class="mb-3 text-3xl font-semibold">{brand.name}</h2>
+        <p class="text-base text-gray-400">{brand.tagline}</p>
+      </div>
+
+      <div class="footer-reveal" style="animation-delay: 0.2s">
+        <h3 class="mb-4 text-lg font-medium">contact</h3>
+        <div class="space-y-2">
+          <p class="text-base text-gray-400">{contact.location}</p>
+          <a
+            href={contact.link.url}
+            aria-label={contact.link.text}
+            data-footer-link
+            data-label={contact.link.text}
+            class="inline-block border-b border-transparent text-base text-gray-400 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-300 hover:translate-x-[2px] hover:border-primary hover:text-white"
+          >
+            <span data-scramble data-original={contact.link.text}>{contact.link.text}</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-reveal" style="animation-delay: 0.3s">
+        <h3 class="mb-4 text-lg font-medium">Accessibility</h3>
+        <div class="space-y-2">
+          <p class="text-base text-gray-400">{accessibility.hours}</p>
+          <p class="text-base text-gray-400">{accessibility.availability}</p>
+        </div>
+      </div>
+
+      <div class="footer-reveal" style="animation-delay: 0.4s">
+        <h3 class="mb-4 text-lg font-medium">Legal</h3>
+        <div class="space-y-2">
+          {
+            legal.map((link) => (
+              <div>
+                <a
+                  href={link.url}
+                  aria-label={link.name}
+                  data-footer-link
+                  data-label={link.name}
+                  class="inline-block border-b border-transparent text-base text-gray-400 transition-[color,background-color,border-color,opacity,transform,box-shadow,filter] duration-300 hover:translate-x-[2px] hover:border-primary hover:text-white"
+                >
+                  <span data-scramble data-original={link.name}>
+                    {link.name}
+                  </span>
+                </a>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-reveal mt-16 pt-8" style="animation-delay: 0.5s">
+      <p class="text-base text-gray-500">©{year} Gerald Bahati | All rights reserved.</p>
+    </div>
+  </div>
+</footer>

@@ -4,6 +4,10 @@ dist/
 # generated types
 .astro/
 
+# generated responsive image variants
+public/img/
+src/lib/site-images.generated.ts
+
 # dependencies
 node_modules/
 

@@ -4,17 +4,24 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "bunx --bun astro build --config astro.verify.config.mjs",
     "check-types": "astro check",
     "astro": "astro",
     "dev:bare": "astro dev"
   },
   "dependencies": {
     "@orpc/client": "catalog:",
+    "@portfolio-stack/analytics": "workspace:*",
     "@portfolio-stack/api": "workspace:*",
     "@portfolio-stack/env": "workspace:*",
+    "@portfolio-stack/media": "workspace:*",
+    "@fontsource-variable/syne": "^5.2.8",
+    "@sentry/astro": "^10.38.0",
     "astro": "^7.1.5",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
+    "hls.js": "^1.6.15",
+    "sharp": "^0.34.5",
     "zod": "catalog:"
   },
   "devDependencies": {

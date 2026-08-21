@@ -1,0 +1,36 @@
+---
+interface Props {
+  label: string;
+  counter: string;
+  duration?: number;
+  dividerColor?: string;
+}
+
+const { label, counter, duration = 2, dividerColor = "bg-foreground" } = Astro.props;
+---
+
+<div data-section-divider data-duration={String(duration)} class="w-full">
+  <div class="mb-4 flex items-center justify-between">
+    <div data-divider-blur>
+      <span data-scramble data-original={label} class="text-sm font-medium tracking-wider">
+        {label}
+      </span>
+    </div>
+    <div data-divider-blur>
+      <span data-scramble data-original={counter} class="text-sm font-medium">{counter}</span>
+    </div>
+  </div>
+  <div class="relative h-px w-full overflow-hidden">
+    <div
+      data-divider-line
+      class:list={["absolute inset-y-0 left-0 w-full origin-left", dividerColor]}
+      style={`transition: transform ${duration}s ease-out`}
+    >
+    </div>
+  </div>
+</div>
+
+<script>
+  import { initSectionDividers } from "../lib/section-divider";
+  initSectionDividers();
+</script>

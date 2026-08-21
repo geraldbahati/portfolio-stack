@@ -1,0 +1,34 @@
+---
+import { PUBLIC_IMAGE_TRANSFORM_ZONE, PUBLIC_STREAM_CUSTOMER } from "astro:env/client";
+
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { IMAGE_PRESETS } from "../lib/image-presets";
+import { projectMediaAssets, projectPosterPreload } from "../lib/project-media/poster";
+import { loadPublishedProjects } from "../lib/projects";
+import { PAGE_COPY, projectsIndexJsonLd, SITE_NAME } from "../lib/site";
+import ProjectsIndex from "../sections/projects-index/ProjectsIndex.astro";
+
+const projects = await loadPublishedProjects();
+const first = projects[0];
+const media = first
+  ? projectMediaAssets(
+      first,
+      {
+        streamCustomer: PUBLIC_STREAM_CUSTOMER,
+        transformZone: PUBLIC_IMAGE_TRANSFORM_ZONE,
+      },
+      { sizes: IMAGE_PRESETS.projectIndex.sizes },
+    )
+  : null;
+const lcpImage = media ? projectPosterPreload(media) : null;
+---
+
+<SiteLayout
+  title={`${PAGE_COPY.projects.title} | ${SITE_NAME}`}
+  description={PAGE_COPY.projects.description}
+  jsonLd={projectsIndexJsonLd(projects)}
+  lcpImage={lcpImage ?? undefined}
+  ogImage={media?.posterSrc ?? undefined}
+>
+  <ProjectsIndex projects={projects} />
+</SiteLayout>

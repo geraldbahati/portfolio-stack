@@ -1,0 +1,15 @@
+export const CTA_HEADING = "Would you like to be featured here as well?";
+export const CTA_BODY = "Feel free to use the contact form or other contact options.";
+export const CTA_LABEL = "Request a Project";
+export const CTA_HREF = "/contact";
+export const PREV_LABEL = "Previous Project";
+export const NEXT_LABEL = "Next Project";
+export const ALL_PROJECTS_LABEL = "All Projects";
+export const BACK_OVERVIEW = "Back to Overview";
+export const PROJECTS_CRUMB = "Projects";
+export const CUSTOMER_LABEL = "Customer:";
+export const PERIOD_LABEL = "Period:";
+export const PERFORMANCE_LABEL = "Performance:";
+export const FEATURES_LABEL = "Features:";
+export const LIVE_HINT = "Check it out";
+export const LIVE_HINT_MOBILE = "Tap to visit";

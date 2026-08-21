@@ -1,0 +1,36 @@
+---
+import { CLOSING_BODY, CLOSING_LEAD } from "./copy";
+import StickyScroll from "./StickyScroll.astro";
+import "./info.css";
+---
+
+<section data-section-id="services" data-info class="relative bg-white text-foreground">
+  <div data-grid-pattern-slot class="absolute inset-0 z-0" aria-hidden="true">
+    <svg class="pointer-events-none absolute inset-0 h-full w-full stroke-current/5">
+      <defs>
+        <pattern id="info-grid" width="32" height="32" patternUnits="userSpaceOnUse" x="-1" y="-1">
+          <path d="M.5 32V.5H32" fill="none"></path>
+        </pattern>
+      </defs>
+      <rect data-grid-base width="100%" height="100%" stroke-width="0" fill="url(#info-grid)"></rect>
+      <g data-grid-highlights></g>
+    </svg>
+  </div>
+  <div class="relative z-10">
+    <StickyScroll />
+    <div class="flex min-h-[30vh] w-full items-center justify-center px-8">
+      <div class="mx-auto max-w-7xl">
+        <p
+          data-info-closing
+          class="grid-interaction-blocked text-3xl leading-none tracking-tight indent-8 md:text-4xl md:indent-80 lg:text-[51.2px] lg:indent-96 short:text-3xl short:indent-40"
+        >
+          <span>{CLOSING_LEAD}</span>{CLOSING_BODY}
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+  import "./boot";
+</script>

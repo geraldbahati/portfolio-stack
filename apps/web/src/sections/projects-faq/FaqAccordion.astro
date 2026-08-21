@@ -1,0 +1,59 @@
+---
+import { FAQ_ITEMS } from "./copy";
+---
+
+<div class="space-y-0">
+  {
+    FAQ_ITEMS.map((item, index) => (
+      <div
+        data-faq-item
+        data-faq-question={item.question}
+        data-faq-position={String(index + 1)}
+        class="faq-item border-t border-primary/50 last:border-b"
+      >
+        <button
+          type="button"
+          id={`faq-question-${index}`}
+          class="flex w-full items-center justify-between py-6 text-left transition-colors hover:text-gray-300"
+          aria-expanded="false"
+          aria-controls={`faq-answer-${index}`}
+        >
+          <h3 class="pr-4 text-base font-light tracking-wider text-white uppercase">{item.question}</h3>
+          <span class="faq-item__icon flex-shrink-0 text-gray-400" aria-hidden="true">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 6v12m6-6H6"></path>
+            </svg>
+          </span>
+        </button>
+        <div
+          id={`faq-answer-${index}`}
+          data-faq-answer
+          role="region"
+          aria-labelledby={`faq-question-${index}`}
+          aria-hidden="true"
+          class="faq-item__panel"
+        >
+          <div class="overflow-hidden">
+            <div class="max-w-3xl pb-6 text-base leading-relaxed text-gray-400">
+              {item.steps ? (
+                <ul class="space-y-3">
+                  {item.steps.map((step) => (
+                    <li class="flex items-start">
+                      <span class="mt-1 mr-3 text-primary">•</span>
+                      <div>
+                        <strong class="text-white">{step.title}</strong>
+                        <span class="mt-1 block">{step.body}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>{item.answerText}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    ))
+  }
+</div>

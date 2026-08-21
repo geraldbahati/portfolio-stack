@@ -1,0 +1,46 @@
+---
+import { splitWords } from "./copy";
+import { charAnimationRangeVh } from "./timeline";
+
+interface Props {
+  text: string;
+  offset?: number;
+  total: number;
+}
+
+const { text, offset = 0, total } = Astro.props;
+const { words, offsets } = splitWords(text);
+---
+
+<span class="sr-only">{text}</span>
+<span aria-hidden="true">
+  {
+    words.map((word, wordIndex) => {
+      const wordOffset = offset + (offsets[wordIndex] ?? 0);
+
+      return (
+        <span class="inline-block whitespace-nowrap">
+          {word.split("").map((char, charIndex) => {
+            const index = wordOffset + charIndex;
+            const range = charAnimationRangeVh(index, total);
+
+            return (
+              <span
+                class="scroll-bio-char inline-block"
+                data-char-index={index}
+                style={`animation-range: ${range.start.toFixed(3)}vh ${range.end.toFixed(3)}vh`}
+              >
+                {char}
+              </span>
+            );
+          })}
+          {wordIndex < words.length - 1 && (
+            <span class="inline-block" style="width: 0.25em">
+              {" "}
+            </span>
+          )}
+        </span>
+      );
+    })
+  }
+</span>

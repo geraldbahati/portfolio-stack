@@ -1,0 +1,18 @@
+---
+import Bio from "./Bio.astro";
+import Hero from "./Hero.astro";
+import "./hero-bio.css";
+---
+
+<div data-hero-bio class="hero-bio">
+  <div class="hero-bio__pin">
+    <Hero />
+  </div>
+  <div class="hero-bio__overlay">
+    <Bio />
+  </div>
+</div>
+
+<script>
+  import "./boot";
+</script>

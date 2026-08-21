@@ -1,0 +1,64 @@
+---
+import { PUBLIC_IMAGE_TRANSFORM_ZONE } from "astro:env/client";
+
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { loadPublishedProject } from "../../lib/projects";
+import { projectHeroImage, projectOgImage } from "../../lib/remote-image";
+import { projectPageCopy, projectWorkJsonLd } from "../../lib/site";
+import ProjectDetail from "../../sections/project-detail/ProjectDetail.astro";
+
+const slug = Astro.params.slug;
+
+if (!slug) {
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
+}
+
+const study = await loadPublishedProject(slug);
+
+if (!study) {
+  Astro.response.status = 404;
+  return Astro.rewrite("/404");
+}
+
+const copy = projectPageCopy({
+  title: study.project.title,
+  tagline: study.details?.tagline,
+  description: study.project.description,
+});
+const heroUrl = study.details?.heroImage;
+const heroImage = heroUrl ? projectHeroImage(heroUrl, PUBLIC_IMAGE_TRANSFORM_ZONE) : null;
+const ogImage = projectOgImage(heroUrl ?? study.project.poster, PUBLIC_IMAGE_TRANSFORM_ZONE);
+---
+
+<SiteLayout
+  title={copy.title}
+  description={copy.description}
+  ogType="article"
+  ogImage={ogImage}
+  publishedTime={study.project.createdAt}
+  modifiedTime={study.project.updatedAt}
+  lcpImage={heroImage?.preload}
+  jsonLd={projectWorkJsonLd({
+    slug: study.project.id,
+    name: study.project.title,
+    description: copy.description,
+    image: heroUrl ?? study.project.poster,
+    dateCreated: study.project.createdAt,
+    dateModified: study.project.updatedAt,
+    keywords: study.details?.services,
+    genre: study.details?.industry,
+    videoUrl: study.project.type === "video" ? study.project.src : null,
+    videoPoster: study.project.poster,
+    testimonial: study.testimonial,
+  })}
+>
+  <ProjectDetail
+    study={study}
+    hero={
+      heroImage
+        ? { src: heroImage, alt: study.details?.heroAlt || study.project.title }
+        : null
+    }
+  />
+</SiteLayout>

@@ -1,0 +1,55 @@
+---
+import type { OptimizedImage } from "../lib/image-presets";
+
+interface Props {
+  src: OptimizedImage;
+  alt: string;
+  class?: string;
+  imgClass?: string;
+  loading?: "eager" | "lazy";
+  fetchpriority?: "high" | "low" | "auto";
+  decoding?: "async" | "auto" | "sync";
+  deferred?: boolean;
+}
+
+const {
+  src: image,
+  alt,
+  class: className,
+  imgClass,
+  loading = "lazy",
+  fetchpriority = "auto",
+  decoding = "async",
+  deferred = false,
+} = Astro.props;
+---
+
+<picture class={className}>
+  {
+    image.sources.map((source) =>
+      deferred ? (
+        <source type={source.type} data-srcset={source.srcset} sizes={image.sizes} />
+      ) : (
+        <source type={source.type} srcset={source.srcset} sizes={image.sizes} />
+      ),
+    )
+  }
+  <img
+    src={deferred ? undefined : image.src}
+    srcset={deferred ? undefined : image.srcset}
+    data-src={deferred ? image.src : undefined}
+    data-srcset={deferred ? image.srcset : undefined}
+    data-sizes={deferred ? image.sizes : undefined}
+    data-deferred-image={deferred ? "" : undefined}
+    data-image-component={import.meta.env.DEV ? "true" : undefined}
+    sizes={image.sizes}
+    width={image.width}
+    height={image.height}
+    alt={alt}
+    loading={deferred ? "eager" : loading}
+    fetchpriority={fetchpriority}
+    decoding={decoding}
+    class={imgClass}
+    style={image.lqip ? `background-image: url(${image.lqip}); background-size: cover` : undefined}
+  />
+</picture>

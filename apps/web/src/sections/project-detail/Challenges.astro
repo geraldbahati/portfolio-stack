@@ -1,0 +1,31 @@
+---
+import type { PublishedCaseStudy } from "@portfolio-stack/api/routers/projects";
+
+import { renderMarkdown } from "./markdown";
+
+interface Props {
+  challenges: PublishedCaseStudy["challenges"];
+}
+
+const { challenges } = Astro.props;
+---
+
+{
+  challenges.length > 0 && (
+    <section class="project-deferred-section bg-background py-24">
+      <div class="container mx-auto max-w-4xl px-4 md:px-6">
+        <div class="mb-12 opacity-40" aria-hidden="true">
+          <svg class="h-auto w-full" viewBox="0 0 1200 5" fill="none">
+            <line x1="0" y1="2.5" x2="1200" y2="2.5" stroke="currentColor" stroke-width="0.5" stroke-linecap="round"></line>
+          </svg>
+        </div>
+        {challenges.map((challenge) => (
+          <div class="mb-12 last:mb-0" data-reveal="up">
+            <h2 class="mb-8 text-2xl font-medium tracking-tight text-foreground md:text-3xl">{challenge.title}</h2>
+            <div class="project-prose" set:html={renderMarkdown(challenge.content)} />
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}

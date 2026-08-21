@@ -1,0 +1,49 @@
+---
+import type { ImageMetadata } from "astro";
+import aiImage from "../../assets/images/ai.webp";
+import backendImage from "../../assets/images/backend.webp";
+import devopsImage from "../../assets/images/devops-engineer.webp";
+import webDesignImage from "../../assets/images/web-design.webp";
+import { SERVICE_SECTIONS, type ServiceId } from "./copy";
+import ServiceCopy from "./ServiceCopy.astro";
+import ServicePanel from "./ServicePanel.astro";
+
+const images: Record<ServiceId, ImageMetadata> = {
+  frontend: webDesignImage,
+  backend: backendImage,
+  infrastructure: devopsImage,
+  ai: aiImage,
+};
+
+const stickyHeight = `${(SERVICE_SECTIONS.length - 0.25) * 100}vh`;
+---
+
+<div data-sticky-scroll class="info-layout" style={`--sticky-track-h: ${stickyHeight}`}>
+  <div class="info-texts">
+    {
+      SERVICE_SECTIONS.map((section, index) => (
+        <ServiceCopy
+          label={section.label}
+          title={section.title}
+          description={section.description}
+          bullets={section.bullets}
+          index={index}
+        />
+      ))
+    }
+  </div>
+  <div class="info-media">
+    <div class="info-track">
+      <div class="info-track__spacer"></div>
+      <div data-sticky-panel>
+        <div class="info-stack">
+          {
+            SERVICE_SECTIONS.map((section, index) => (
+              <ServicePanel image={images[section.id]} title={section.title} index={index} />
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

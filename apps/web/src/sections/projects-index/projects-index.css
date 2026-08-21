@@ -1,0 +1,10 @@
+[data-project-item] {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 520px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-project-item] {
+    transform: none;
+  }
+}

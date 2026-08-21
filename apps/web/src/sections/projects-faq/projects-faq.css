@@ -1,0 +1,139 @@
+[data-projects-track],
+[data-faq-section] {
+  backface-visibility: hidden;
+}
+
+[data-projects-header] {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 500ms ease-out,
+    transform 500ms ease-out;
+}
+
+[data-projects-header].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+[data-projects-title-wrap],
+[data-projects-desc-wrap] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 500ms ease-out,
+    transform 500ms ease-out;
+}
+
+[data-projects-title],
+[data-projects-desc] {
+  transition: color 500ms ease-out;
+}
+
+[data-projects-header].is-in [data-projects-title-wrap],
+[data-projects-header].is-in [data-projects-desc-wrap] {
+  opacity: 1;
+  transform: none;
+}
+
+[data-projects-header].is-in [data-projects-title-wrap] {
+  transition-delay: 100ms;
+}
+
+[data-projects-header].is-in [data-projects-desc-wrap] {
+  transition-delay: 200ms;
+}
+
+[data-faq-social] a {
+  opacity: 0;
+  transform: translateX(-20px);
+  transition:
+    color 500ms ease-out,
+    opacity 500ms ease-out,
+    transform 500ms ease-out;
+}
+
+[data-faq-social].is-in a {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 100ms);
+}
+
+.projects-surface__light,
+.projects-surface__dark {
+  position: absolute;
+  inset: 0;
+}
+
+.projects-surface__light {
+  background: var(--color-surface-light);
+}
+
+.projects-surface__dark {
+  background: var(--color-surface-dark);
+  opacity: 0;
+  transition: opacity 500ms ease;
+}
+
+.projects-surface.is-dark .projects-surface__dark {
+  opacity: 1;
+}
+
+.faq-item__panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 300ms ease,
+    opacity 300ms ease;
+}
+
+.faq-item.is-open .faq-item__panel {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.faq-item__icon {
+  transition: transform 300ms ease;
+}
+
+.faq-item.is-open .faq-item__icon {
+  transform: rotate(45deg);
+}
+
+.consultation-photo {
+  filter: grayscale(1);
+  transition: filter 300ms ease;
+}
+
+.consultation-photo:hover,
+.consultation-photo:focus-visible {
+  filter: grayscale(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-projects-header],
+  [data-projects-title-wrap],
+  [data-projects-desc-wrap],
+  [data-faq-social] a,
+  .faq-item__panel,
+  .faq-item__icon,
+  .consultation-photo,
+  .projects-surface__dark {
+    transition: none;
+  }
+
+  [data-projects-header],
+  [data-projects-header].is-in [data-projects-title-wrap],
+  [data-projects-header].is-in [data-projects-desc-wrap],
+  [data-faq-social] a,
+  [data-faq-social].is-in a {
+    opacity: 1;
+    transform: none;
+    transition-delay: 0ms;
+  }
+
+  .consultation-photo {
+    filter: none;
+  }
+}

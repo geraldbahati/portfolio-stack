@@ -1,0 +1,126 @@
+.contact-cta__phrase {
+  border-bottom-color: transparent;
+  transition: border-color 300ms ease;
+}
+
+.contact-cta.is-active .contact-cta__phrase {
+  border-bottom-color: var(--color-primary);
+}
+
+.contact-cta__media {
+  display: inline-grid;
+  place-items: center;
+  overflow: hidden;
+  margin-inline: 0;
+  max-height: 0;
+  max-width: 0;
+  scale: 0.9;
+  opacity: 0;
+  vertical-align: middle;
+  border-radius: 0.75rem;
+  background: rgb(0 0 0 / 0.4);
+  transition:
+    max-width 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    margin 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.contact-cta.is-on .contact-cta__media {
+  margin-inline: 0.25em;
+  max-height: 1.75rem;
+  max-width: 3rem;
+  scale: 1;
+  opacity: 1;
+}
+
+.contact-cta__video {
+  aspect-ratio: 5 / 3;
+  height: auto;
+  width: 3rem;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.contact-cta__arrow {
+  display: inline-block;
+  margin-left: 0.5rem;
+  transition: transform 280ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.contact-cta.is-on .contact-cta__arrow {
+  transform: translate3d(5px, -5px, 0);
+}
+
+@media (min-width: 640px) {
+  .contact-cta.is-on .contact-cta__media {
+    max-height: 2.5rem;
+    max-width: 4rem;
+  }
+
+  .contact-cta__video {
+    width: 4rem;
+  }
+
+  .contact-cta__arrow {
+    margin-left: 1rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .contact-cta.is-on .contact-cta__media {
+    max-height: 3.5rem;
+    max-width: 6rem;
+  }
+
+  .contact-cta__video {
+    width: 6rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .contact-cta.is-on .contact-cta__media {
+    max-height: 5rem;
+    max-width: 8rem;
+  }
+
+  .contact-cta__video {
+    width: 8rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .contact-cta.is-on .contact-cta__media {
+    max-height: 6rem;
+    max-width: 10rem;
+  }
+
+  .contact-cta__video {
+    width: 10rem;
+  }
+}
+
+@media (max-height: 800px) and (min-width: 1024px) and (max-width: 1440px) {
+  .contact-cta.is-on .contact-cta__media {
+    max-height: 3rem;
+    max-width: 5rem;
+  }
+
+  .contact-cta__video {
+    width: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact-cta__phrase,
+  .contact-cta__media,
+  .contact-cta__arrow {
+    transition: none;
+  }
+
+  .contact-cta.is-on .contact-cta__arrow {
+    transform: none;
+  }
+}

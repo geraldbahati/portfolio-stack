@@ -1,54 +1,53 @@
 ---
-import Layout from "../layouts/Layout.astro";
+import { getImage } from "astro:assets";
+import heroImage from "../assets/images/hero-image.webp";
+import SectionDivider from "../components/SectionDivider.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { IMAGE_PRESETS } from "../lib/image-presets";
+import { loadPublishedProjects } from "../lib/projects";
+import { homepageJsonLd, PAGE_COPY } from "../lib/site";
+import Contact from "../sections/contact/Contact.astro";
+import HeroBio from "../sections/hero-bio/HeroBio.astro";
+import { SERVICES_DIVIDER } from "../sections/info/copy";
+import Info from "../sections/info/Info.astro";
+import { FAQ_ENTRIES, PROJECTS_DIVIDER } from "../sections/projects-faq/copy";
+import ProjectsFaq from "../sections/projects-faq/ProjectsFaq.astro";
 
-const TITLE_TEXT = `
- ██████╗ ███████╗████████╗████████╗███████╗██████╗
- ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
- ██████╔╝█████╗     ██║      ██║   █████╗  ██████╔╝
- ██╔══██╗██╔══╝     ██║      ██║   ██╔══╝  ██╔══██╗
- ██████╔╝███████╗   ██║      ██║   ███████╗██║  ██║
- ╚═════╝ ╚══════╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
-
- ████████╗    ███████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-    ██║       ███████╗   ██║   ███████║██║     █████╔╝
-    ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
-    ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
- `;
+const [lcp, projects] = await Promise.all([
+  getImage({
+    src: heroImage,
+    widths: [...IMAGE_PRESETS.hero.widths],
+    sizes: IMAGE_PRESETS.hero.sizes,
+    quality: IMAGE_PRESETS.hero.quality,
+  }),
+  loadPublishedProjects(),
+]);
 ---
 
-<Layout title="portfolio-stack">
-  <div class="container mx-auto max-w-3xl px-4 py-2">
-    <pre class="overflow-x-auto font-mono text-sm text-white">{TITLE_TEXT}</pre>
-    <div class="grid gap-6">
-      <section class="rounded-lg border border-neutral-700 p-4">
-        <h2 class="mb-2 font-medium text-white">API Status</h2>
-        <div class="flex items-center gap-2" id="api-status">
-          <div class="h-2 w-2 rounded-full bg-orange-400" id="status-dot"></div>
-          <span class="text-sm text-neutral-400" id="status-text">Checking...</span>
-        </div>
-      </section>
+<SiteLayout
+  title={PAGE_COPY.home.title}
+  description={PAGE_COPY.home.description}
+  theme="home"
+  jsonLd={homepageJsonLd(FAQ_ENTRIES)}
+  lcpImage={{
+    href: lcp.src,
+    type: "image/webp",
+    imagesrcset: lcp.srcSet.attribute || `${lcp.src} ${heroImage.width}w`,
+    imagesizes: IMAGE_PRESETS.hero.sizes,
+  }}
+>
+  <HeroBio />
+  <section class="relative bg-white py-16 text-foreground sm:py-20 lg:py-24">
+    <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <SectionDivider label={SERVICES_DIVIDER.label} counter={SERVICES_DIVIDER.counter} />
     </div>
-  </div>
-</Layout>
-
-<script>
-  import { orpc } from "../lib/orpc";
-
-  const statusDot = document.getElementById("status-dot")!;
-  const statusText = document.getElementById("status-text")!;
-
-  async function checkHealth() {
-    try {
-      const data = await orpc.healthCheck();
-      statusDot.className = "h-2 w-2 rounded-full bg-green-500";
-      statusText.textContent = "Connected";
-    } catch (error) {
-      statusDot.className = "h-2 w-2 rounded-full bg-red-500";
-      statusText.textContent = "Disconnected";
-    }
-  }
-
-  checkHealth();
-</script>
+  </section>
+  <Info />
+  <section class="relative bg-white py-16 text-foreground">
+    <div class="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <SectionDivider label={PROJECTS_DIVIDER.label} counter={PROJECTS_DIVIDER.counter} />
+    </div>
+  </section>
+  <ProjectsFaq projects={projects} />
+  <Contact />
+</SiteLayout>

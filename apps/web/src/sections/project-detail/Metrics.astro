@@ -1,0 +1,48 @@
+---
+import type { PublishedCaseStudy } from "@portfolio-stack/api/routers/projects";
+
+import { metricRingPercent } from "./metrics";
+
+interface Props {
+  metrics: PublishedCaseStudy["metrics"];
+}
+
+const { metrics } = Astro.props;
+---
+
+{
+  metrics.length > 0 && (
+    <section class="project-deferred-section border-t border-black/10 py-20">
+      <div class="mx-auto grid max-w-5xl grid-cols-1 gap-8 md:grid-cols-3 md:gap-12">
+        {metrics.map((metric, index) => {
+          const percent = metricRingPercent(metric.value);
+          const color = `var(--metric-chart-${(index % 5) + 1})`;
+          return (
+            <div
+              class="flex flex-col items-center text-center"
+              data-reveal="zoom"
+              style={`--d: ${index * 100}ms`}
+            >
+              <div class="metric-ring" role="img" aria-label={`${metric.value} ${metric.label}`}>
+                <svg viewBox="0 0 200 200" aria-hidden="true">
+                  <circle class="metric-ring-track" cx="100" cy="100" r="80" pathLength="100" />
+                  <circle
+                    class="metric-ring-value"
+                    cx="100"
+                    cy="100"
+                    r="80"
+                    pathLength="100"
+                    stroke={color}
+                    stroke-dasharray={`${percent} ${100 - percent}`}
+                  />
+                </svg>
+                <span>{metric.value}</span>
+              </div>
+              <div class="mt-4 text-sm font-medium tracking-wide text-foreground md:text-base">{metric.label}</div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  )
+}
