@@ -1,0 +1,18 @@
+{
+  "name": "Gerald Bahati — Software Engineer",
+  "short_name": "Gerald Bahati",
+  "description": "Portfolio and production engineering case studies by Gerald Bahati.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#f5f4ef",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

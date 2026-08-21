@@ -1,0 +1,24 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { SITE_NAME } from "../lib/site";
+
+Astro.response.status = 404;
+---
+
+<SiteLayout
+  title={`Page not found | ${SITE_NAME}`}
+  description="This page does not exist. Head back to the work, or get in touch."
+  robots="noindex, follow"
+>
+  <div class="mx-auto min-h-screen max-w-3xl px-6 pt-32">
+    <h1 class="text-4xl font-medium tracking-tight">Page not found</h1>
+    <p class="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground">
+      That URL is not a published page. The work lives on the homepage and in the case studies.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-4">
+      <a href="/" class="text-primary underline-offset-4 hover:underline">Home</a>
+      <a href="/projects" class="text-primary underline-offset-4 hover:underline">Projects</a>
+      <a href="/contact" class="text-primary underline-offset-4 hover:underline">Contact</a>
+    </div>
+  </div>
+</SiteLayout>
