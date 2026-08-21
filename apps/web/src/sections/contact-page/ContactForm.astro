@@ -1,0 +1,130 @@
+---
+import { PUBLIC_TURNSTILE_SITE_KEY } from "astro:env/client";
+import { CONTACT_EMAIL } from "@portfolio-stack/api/contact";
+
+import {
+  FORM_ARIA,
+  FORM_EMAIL_LABEL,
+  FORM_EMAIL_PLACEHOLDER,
+  FORM_HEADING,
+  FORM_MESSAGE_LABEL,
+  FORM_MESSAGE_PLACEHOLDER,
+  FORM_NAME_LABEL,
+  FORM_NAME_PLACEHOLDER,
+  FORM_PRIVACY_AFTER,
+  FORM_PRIVACY_BEFORE,
+  FORM_PRIVACY_LINK,
+  FORM_SUBMIT,
+} from "./copy";
+
+const turnstileKey = PUBLIC_TURNSTILE_SITE_KEY;
+---
+
+<form
+  data-contact-form
+  class="space-y-6"
+  novalidate
+  itemscope
+  itemtype="https://schema.org/ContactForm"
+  aria-label={FORM_ARIA}
+>
+  <div data-contact-status hidden class="contact-status" role="status" aria-live="polite"></div>
+
+  <input
+    name="honeypot"
+    type="text"
+    tabindex="-1"
+    autocomplete="off"
+    class="sr-only"
+    aria-hidden="true"
+  />
+
+  <h3 class="text-2xl font-semibold text-black">{FORM_HEADING}</h3>
+
+  <div class="contact-field">
+    <label for="contact-name" class="text-sm font-medium text-black">{FORM_NAME_LABEL}</label>
+    <input
+      id="contact-name"
+      name="name"
+      type="text"
+      placeholder={FORM_NAME_PLACEHOLDER}
+      autocomplete="name"
+      required
+      minlength="2"
+      maxlength="100"
+      itemprop="name"
+    />
+    <p id="contact-name-error" class="contact-error" hidden></p>
+  </div>
+
+  <div class="contact-field">
+    <label for="contact-email" class="text-sm font-medium text-black">{FORM_EMAIL_LABEL}</label>
+    <input
+      id="contact-email"
+      name="email"
+      type="email"
+      placeholder={FORM_EMAIL_PLACEHOLDER}
+      autocomplete="email"
+      required
+      maxlength="255"
+      itemprop="email"
+    />
+    <p id="contact-email-error" class="contact-error" hidden></p>
+  </div>
+
+  <div class="contact-field">
+    <label for="contact-message" class="text-sm font-medium text-black">{FORM_MESSAGE_LABEL}</label>
+    <textarea
+      id="contact-message"
+      name="message"
+      placeholder={FORM_MESSAGE_PLACEHOLDER}
+      rows="6"
+      required
+      minlength="10"
+      maxlength="1000"
+      itemprop="text"
+    ></textarea>
+    <p id="contact-message-error" class="contact-error" hidden></p>
+  </div>
+
+  <div class="contact-consent">
+    <input id="contact-privacy" name="privacyConsent" type="checkbox" value="true" required />
+    <div>
+      <label for="contact-privacy" class="inline font-normal text-gray-800">
+        {FORM_PRIVACY_BEFORE}{" "}
+        <a
+          href="/privacy"
+          class="text-blue-600 underline hover:text-blue-800"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Read privacy policy (opens in new tab)"
+        >
+          {FORM_PRIVACY_LINK}
+        </a>{" "}{FORM_PRIVACY_AFTER}
+      </label>
+      <p id="contact-privacyConsent-error" class="contact-error" hidden></p>
+    </div>
+  </div>
+
+  {
+    turnstileKey && (
+      <div
+        data-turnstile
+        class="min-h-16"
+        data-sitekey={turnstileKey}
+      >
+      </div>
+    )
+  }
+
+  <button type="submit" data-contact-submit class="contact-submit" disabled>
+    {FORM_SUBMIT}
+  </button>
+</form>
+
+<p class="mt-6 text-sm text-gray-600">
+  Prefer email?
+  <a class="font-medium text-black underline underline-offset-4" href={`mailto:${CONTACT_EMAIL}`}>
+    {CONTACT_EMAIL}
+  </a>
+</p>

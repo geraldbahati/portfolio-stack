@@ -1,0 +1,145 @@
+.imprint-address {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 1.5rem;
+  border: 1px solid var(--color-gray-100);
+  border-radius: 1rem;
+  background: var(--color-gray-50);
+  color: var(--color-gray-600);
+  font-style: normal;
+}
+
+.imprint-address strong {
+  margin-bottom: 0.5rem;
+  color: var(--color-gray-900);
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.imprint-contact-note {
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 2px solid color-mix(in oklch, var(--color-primary) 50%, transparent);
+  font-style: italic;
+}
+
+.imprint-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.imprint-contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-gray-100);
+  border-radius: 0.5rem;
+  background: var(--color-gray-50);
+}
+
+.imprint-contact-label {
+  color: var(--color-gray-500);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.imprint-contact-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.imprint-contact-row a {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-gray-900);
+  font-weight: 600;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transition: color 180ms ease;
+}
+
+.imprint-contact-row a:hover {
+  color: var(--color-primary);
+}
+
+.imprint-copy-button {
+  display: grid;
+  flex: 0 0 auto;
+  width: 2rem;
+  height: 2rem;
+  padding: 0.5rem;
+  border: 0;
+  border-radius: 0.375rem;
+  background: transparent;
+  color: var(--color-gray-400);
+  cursor: pointer;
+  opacity: 0;
+  place-items: center;
+  transition:
+    color 180ms ease,
+    background-color 180ms ease,
+    opacity 180ms ease;
+}
+
+.imprint-contact-card:hover .imprint-copy-button,
+.imprint-copy-button:focus-visible {
+  opacity: 1;
+}
+
+.imprint-copy-button:hover {
+  background: var(--color-gray-100);
+  color: var(--color-primary);
+}
+
+.imprint-copy-button svg {
+  grid-area: 1 / 1;
+  width: 1rem;
+  height: 1rem;
+}
+
+.imprint-check-icon,
+.imprint-copy-button[data-copied="true"] .imprint-copy-icon {
+  display: none;
+}
+
+.imprint-copy-button[data-copied="true"] {
+  color: var(--color-primary);
+  opacity: 1;
+}
+
+.imprint-copy-button[data-copied="true"] .imprint-check-icon {
+  display: block;
+}
+
+.imprint-responsible {
+  gap: 1.5rem;
+}
+
+.imprint-dispute {
+  padding-top: 2rem;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+@media (max-width: 767px) {
+  .imprint-contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .imprint-copy-button {
+    opacity: 1;
+  }
+}
+
+@media print {
+  .imprint-copy-button {
+    display: none;
+  }
+}

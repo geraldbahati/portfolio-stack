@@ -1,0 +1,13 @@
+---
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { contactPageJsonLd, PAGE_COPY } from "../lib/site";
+import ContactPage from "../sections/contact-page/ContactPage.astro";
+---
+
+<SiteLayout
+  title={`${PAGE_COPY.contact.title} | Gerald Bahati`}
+  description={PAGE_COPY.contact.description}
+  jsonLd={contactPageJsonLd()}
+>
+  <ContactPage />
+</SiteLayout>

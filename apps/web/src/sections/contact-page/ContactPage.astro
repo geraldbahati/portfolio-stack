@@ -1,0 +1,96 @@
+---
+import ContactForm from "./ContactForm.astro";
+import {
+  DIRECT_HEADING,
+  OFFICE_CLOSES,
+  OFFICE_DAYS,
+  OFFICE_HEADING,
+  OFFICE_OPENS,
+  PAGE_HEADING,
+  PAGE_INTRO,
+  PAGE_KICKER,
+  PHONE_DISPLAY,
+  PHONE_TEL,
+  WHATSAPP_HREF,
+  WHATSAPP_LABEL,
+} from "./copy";
+import HelloMarquee from "./HelloMarquee.astro";
+import "./contact-page.css";
+---
+
+<div data-contact-page class="bg-white pt-24 sm:pt-[104px] lg:pt-[112px] xl:pt-32">
+  <HelloMarquee />
+
+  <section class="relative" aria-labelledby="contact-heading">
+    <div data-grid-pattern-slot class="pointer-events-none absolute inset-0 z-0" aria-hidden="true">
+      <svg class="absolute inset-0 h-full w-full stroke-current/20">
+        <defs>
+          <pattern id="contact-page-grid" width="32" height="32" patternUnits="userSpaceOnUse" x="-1" y="-1">
+            <path d="M.5 32V.5H32" fill="none"></path>
+          </pattern>
+        </defs>
+        <rect data-grid-base width="100%" height="100%" stroke-width="0" fill="url(#contact-page-grid)"></rect>
+        <g data-grid-highlights></g>
+      </svg>
+    </div>
+
+    <div class="relative z-10 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+      <div class="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:gap-24">
+        <header class="space-y-12">
+          <div>
+            <p class="mb-4 text-sm font-medium tracking-wider text-gray-500 uppercase">{PAGE_KICKER}</p>
+            <h1 id="contact-heading" class="mb-6 text-4xl font-bold text-black lg:text-5xl">
+              {PAGE_HEADING}
+            </h1>
+            <p class="text-base leading-relaxed text-gray-600">{PAGE_INTRO}</p>
+          </div>
+
+          <div class="grid-interaction-blocked pointer-events-auto flex flex-col gap-8 lg:flex-row lg:gap-32">
+            <div itemscope itemtype="https://schema.org/OpeningHoursSpecification">
+              <h2 class="mb-4 text-lg font-semibold text-black">{OFFICE_HEADING}</h2>
+              <div class="space-y-2">
+                <p class="text-gray-600">{OFFICE_DAYS}</p>
+                <p class="font-medium text-gray-800">
+                  <time itemprop="opens" datetime="08:00">{OFFICE_OPENS}</time>
+                  {" - "}
+                  <time itemprop="closes" datetime="18:00">{OFFICE_CLOSES}</time>
+                </p>
+              </div>
+            </div>
+
+            <address class="not-italic" itemscope itemtype="https://schema.org/ContactPoint">
+              <h2 class="mb-4 text-lg font-semibold text-black">{DIRECT_HEADING}</h2>
+              <div class="flex flex-col items-start gap-4">
+                <a
+                  data-contact-channel="phone"
+                  href={`tel:${PHONE_TEL}`}
+                  aria-label={PHONE_DISPLAY}
+                  class="contact-channel"
+                >
+                  <span data-scramble data-original={PHONE_DISPLAY}>{PHONE_DISPLAY}</span>
+                </a>
+                <a
+                  data-contact-channel="whatsapp"
+                  href={WHATSAPP_HREF}
+                  aria-label={WHATSAPP_LABEL}
+                  class="contact-channel"
+                >
+                  <span data-scramble data-original={WHATSAPP_LABEL}>{WHATSAPP_LABEL}</span>
+                </a>
+              </div>
+            </address>
+          </div>
+        </header>
+
+        <aside class="lg:pl-8" aria-labelledby="contact-form-heading">
+          <h2 id="contact-form-heading" class="sr-only">Contact Form</h2>
+          <ContactForm />
+        </aside>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import "./boot";
+</script>

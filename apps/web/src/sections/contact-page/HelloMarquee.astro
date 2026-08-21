@@ -1,0 +1,37 @@
+---
+import { GREETINGS } from "./copy";
+
+const loop = [...GREETINGS, ...GREETINGS];
+---
+
+<div
+  data-hello-marquee
+  class="hello-marquee"
+  aria-hidden="true"
+>
+  <div class="hello-marquee__static">
+    <span lang="en">Hello</span>
+    <span class="hello-marquee__mark">■</span>
+    <span lang="ja">こんにちは</span>
+    <span class="hello-marquee__mark">■</span>
+    <span lang="ar" dir="rtl">مرحبًا</span>
+  </div>
+  <div class="hello-marquee__track">
+    {
+      loop.map((greeting, index) => (
+        <span
+          class="hello-marquee__item"
+          lang={greeting.lang}
+          dir={greeting.dir}
+          data-i={index}
+        >
+          {greeting.text}
+          <span class="hello-marquee__mark">■</span>
+        </span>
+      ))
+    }
+  </div>
+</div>
+<p class="sr-only">
+  Decorative scrolling text showing multilingual greetings: {GREETINGS.map((item) => item.text).join(", ")}
+</p>
