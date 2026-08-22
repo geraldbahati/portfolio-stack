@@ -13,7 +13,6 @@
     "@orpc/client": "catalog:",
     "@portfolio-stack/analytics": "workspace:*",
     "@portfolio-stack/api": "workspace:*",
-    "@portfolio-stack/env": "workspace:*",
     "@portfolio-stack/media": "workspace:*",
     "@fontsource-variable/syne": "^5.2.8",
     "@sentry/astro": "^10.38.0",
@@ -31,6 +30,7 @@
     "@portfolio-stack/config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "tailwindcss": "^4.3.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vite": "^8.2.2"
   }
 }
