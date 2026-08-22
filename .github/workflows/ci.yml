@@ -41,6 +41,13 @@ jobs:
       - run: bunx playwright install --with-deps chromium
 
       - run: bun run test:e2e
+        env:
+          # The e2e stage runs entirely on local emulation and never calls the
+          # Cloudflare API, but the provider layer still insists on an account
+          # id in the right shape. These are deliberately fake — CI holds no
+          # Cloudflare credentials and needs none.
+          CLOUDFLARE_ACCOUNT_ID: "00000000000000000000000000000000"
+          CLOUDFLARE_API_TOKEN: "local-e2e-not-a-real-token"
 
       - uses: actions/upload-artifact@v5
         if: ${{ !cancelled() }}

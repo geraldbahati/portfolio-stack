@@ -119,7 +119,10 @@ export default Alchemy.Stack(
   "portfolio-stack",
   {
     providers: Cloudflare.providers(),
-    state: Cloudflare.state(),
+    // The e2e stage runs entirely on local emulation, so it must not reach for
+    // the Cloudflare-hosted state store: that needs credentials, which CI has
+    // no reason to hold, and its absence failed the run before a test opened.
+    state: isE2e ? Alchemy.localState() : Cloudflare.state(),
   },
   Effect.gen(function* () {
     const serverWorker = yield* server;
