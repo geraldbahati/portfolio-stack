@@ -43,6 +43,11 @@ export function applySecurityHeaders(
   headers.set("X-Frame-Options", "DENY");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Severs the opener relationship for anything this site launches, so a page
+  // opened from here cannot reach back through `window.opener`. Safe at
+  // `same-origin` because no flow here depends on talking to a popup — the
+  // Stream player and Turnstile are iframes, which this does not affect.
+  headers.set("Cross-Origin-Opener-Policy", "same-origin");
   headers.set(
     "Permissions-Policy",
     "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
