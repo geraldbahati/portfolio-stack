@@ -402,9 +402,11 @@ test.describe("public portfolio", () => {
       expect(ogImage).toMatch(/^https:\/\//);
       await expect(page.locator('meta[property="og:image:alt"]')).toHaveCount(1);
 
-      // Exactly one h1, and it is not the scrambling eyebrow.
-      await expect(page.locator("h1")).toHaveCount(1);
-      expect((await page.locator("h1").innerText()).trim().length).toBeGreaterThan(0);
+      // Exactly one h1, and it is not the scrambling eyebrow. Scoped to <main>
+      // because the Astro dev toolbar injects h1s of its own outside it.
+      const heading = page.locator("main h1");
+      await expect(heading).toHaveCount(1);
+      expect((await heading.innerText()).trim().length).toBeGreaterThan(0);
     }
   });
 

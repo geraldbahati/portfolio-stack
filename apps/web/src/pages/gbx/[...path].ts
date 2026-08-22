@@ -18,14 +18,27 @@ const hopByHop = new Set([
   "cookie",
 ]);
 
+/**
+ * Resolve a `/gbx/*` path to its upstream PostHog URL.
+ *
+ * Asset requests go to the CDN host and ingest requests to the API host, but
+ * the `static/` segment is part of the upstream path on both — PostHog serves
+ * its lazily loaded chunks (web vitals, surveys, dead-click autocapture) at
+ * `/static/<version>/<chunk>.js`. Stripping the segment made every one of
+ * those chunks 404, which the browser then refused to execute for having no
+ * MIME type.
+ */
+export function posthogTarget(path: string, search: string): string {
+  const isStatic = path === "static" || path.startsWith("static/");
+  const base = isStatic ? ASSET_HOST : INGEST_HOST;
+  return `${base}/${path}${search}`;
+}
+
 async function proxyPostHog({ params, request }: Parameters<APIRoute>[0]) {
   const rawPath = params.path;
   const path = Array.isArray(rawPath) ? rawPath.join("/") : (rawPath ?? "");
-  const isStatic = path === "static" || path.startsWith("static/");
-  const targetBase = isStatic ? ASSET_HOST : INGEST_HOST;
-  const targetPath = isStatic ? path.replace(/^static\/?/, "") : path;
   const incoming = new URL(request.url);
-  const target = `${targetBase}/${targetPath}${incoming.search}`;
+  const target = posthogTarget(path, incoming.search);
 
   const headers = new Headers();
   for (const [key, value] of request.headers.entries()) {

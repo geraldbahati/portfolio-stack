@@ -148,6 +148,12 @@ const socialProfiles = socialLinks
     <meta name="twitter:image:alt" content={socialImageAlt} />
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    {/*
+      Google renders a favicon beside every mobile result and only accepts one
+      it can discover from a `rel="icon"` link or from /favicon.ico at the
+      root. The SVG above covers modern browsers; this covers the crawler.
+    */}
+    <link rel="icon" type="image/x-icon" sizes="32x32" href="/favicon.ico" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preload" href={syneLatin} as="font" type="font/woff2" crossorigin />
