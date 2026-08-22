@@ -47,6 +47,8 @@ I automatically process limited technical information needed to operate, secure,
 
 PostHog session recording and automatic element capture are disabled. The portfolio sends page views and the specific interaction events described above only after consent.
 
+Separately, Cloudflare Web Analytics measures aggregate traffic on every page load. It records the page address, the referring address, browser and operating system type, approximate country, and page-load timings. It sets no cookies, writes nothing to your device, and assigns you no identifier, so it cannot follow you between sites or be used to build a profile of you.
+
 ## 5. How I Use Your Information
 
 I use personal information for the following purposes and legal bases where applicable:
@@ -69,6 +71,8 @@ If I rely on consent to process information, you may withdraw that consent at an
 - **If you accept:** Analytics storage is enabled and the usage information described above may be collected.
 - **If you decline:** No analytics events are sent.
 
+Cloudflare Web Analytics sits outside that choice. Because it uses no cookies and no browser storage, it neither reads from nor writes to your device, and it runs on every page load regardless of what you decide here. It reports visit counts and page timings in aggregate only.
+
 ### Categories of storage
 
 - **Essential:** Required for core functionality, form submission, and security.
@@ -89,6 +93,7 @@ The portfolio currently uses service providers for:
 - **Database and form processing:** Cloudflare D1 and the portfolio API.
 - **Email delivery:** Resend.
 - **Product analytics:** PostHog EU Cloud, only with your consent.
+- **Aggregate traffic measurement:** Cloudflare Web Analytics, cookieless and not dependent on consent.
 - **Error monitoring:** Sentry, used as essential operational monitoring with data minimisation and URL scrubbing.
 - **Media delivery:** Cloudflare Stream, Images, and R2.
 - **Authentication:** Better Auth for restricted administration features.
@@ -135,7 +140,7 @@ The contact form is protected by rate limiting and anti-abuse controls. When you
 
 If you are in the EU, EEA, or UK, the GDPR provides rights similar to those described above. Legal bases may include performance of a contract, compliance with legal obligations, legitimate interests in operating and protecting the site, and consent.
 
-**Consent is the basis for optional product analytics.** Nothing is collected for that purpose until you accept, and withdrawing consent is as easy as granting it. Essential security, abuse prevention, and minimised application-error monitoring rely on legitimate interests in operating and protecting the Services.
+**Consent is the basis for optional product analytics.** Nothing is collected for that purpose until you accept, and withdrawing consent is as easy as granting it. Essential security, abuse prevention, minimised application-error monitoring, and cookieless aggregate traffic measurement rely on legitimate interests in operating and protecting the Services.
 
 ## 13. Children's Privacy
 

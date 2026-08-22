@@ -63,6 +63,17 @@ async function proxyPostHog({ params, request }: Parameters<APIRoute>[0]) {
   const outbound = new Headers(response.headers);
   outbound.delete("set-cookie");
 
+  // Upstream serves its 404s with `max-age=14400`. Passing that through pins a
+  // failure into every visitor's cache for four hours, so a momentary upstream
+  // problem long outlives its cause and no redeploy can clear it. Errors are
+  // never worth caching here — let the next page load retry.
+  if (!response.ok) {
+    outbound.set("Cache-Control", "no-store");
+    outbound.delete("Expires");
+    outbound.delete("ETag");
+    outbound.delete("Last-Modified");
+  }
+
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,

@@ -1,4 +1,9 @@
 const STREAM_CUSTOMER = "customer-pdxnd9di8ybc2kur.cloudflarestream.com";
+// Cloudflare Web Analytics is injected at the edge, so the script origin and
+// the beacon's reporting origin both have to be allowed even though nothing in
+// this codebase requests them.
+const CF_INSIGHTS_SCRIPT = "https://static.cloudflareinsights.com";
+const CF_INSIGHTS_BEACON = "https://cloudflareinsights.com";
 
 export function contentSecurityPolicy(
   isDevelopment: boolean,
@@ -11,12 +16,12 @@ export function contentSecurityPolicy(
 
   return `
     default-src 'self';
-    script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com;
+    script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com ${CF_INSIGHTS_SCRIPT};
     style-src 'self' 'unsafe-inline';
     img-src 'self' blob: data: https:${extraOrigin ? ` ${extraOrigin}` : ""};
     font-src 'self' data:;
     media-src 'self' blob: https://media.geraldbahati.dev https://${STREAM_CUSTOMER};
-    connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://media.geraldbahati.dev https://${STREAM_CUSTOMER} https://challenges.cloudflare.com${extraOrigin ? ` ${extraOrigin}` : ""};
+    connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://media.geraldbahati.dev https://${STREAM_CUSTOMER} https://challenges.cloudflare.com ${CF_INSIGHTS_BEACON}${extraOrigin ? ` ${extraOrigin}` : ""};
     frame-src 'self' https://challenges.cloudflare.com https://${STREAM_CUSTOMER};
     worker-src 'self' blob:;
     object-src 'none';
