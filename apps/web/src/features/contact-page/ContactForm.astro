@@ -108,12 +108,7 @@ const turnstileKey = PUBLIC_TURNSTILE_SITE_KEY;
 
   {
     turnstileKey && (
-      <div
-        data-turnstile
-        class="min-h-16"
-        data-sitekey={turnstileKey}
-      >
-      </div>
+      <div data-turnstile class="contact-turnstile" data-sitekey={turnstileKey} />
     )
   }
 

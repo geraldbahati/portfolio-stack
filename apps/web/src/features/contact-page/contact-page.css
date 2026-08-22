@@ -208,3 +208,11 @@
     transition: none;
   }
 }
+
+/* The widget renders with `appearance: "interaction-only"`, so it stays empty
+   unless a visitor is actually challenged. Collapse the slot until Turnstile
+   puts something in it, rather than reserving the challenge's height for
+   everyone. */
+.contact-turnstile:empty {
+  display: none;
+}
