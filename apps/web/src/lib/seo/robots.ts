@@ -2,17 +2,10 @@ import { PRIVATE_PATH_PREFIXES } from "../http/cache";
 import { SITE_URL } from "./site";
 
 /**
- * Every AI crawler is allowed, deliberately.
- *
- * The common 2026 posture is to allow retrieval bots (OAI-SearchBot,
- * Claude-SearchBot, PerplexityBot) and block training bots (GPTBot,
- * ClaudeBot, Google-Extended). That trade protects proprietary content — and
- * this site has none. It is a portfolio whose whole purpose is for a stranger
- * to learn the name, so being in the weights is the point, not the cost.
- *
- * They are listed explicitly even though the wildcard group already permits
- * them: a named group means a later `Disallow` under `*` cannot silently
- * change the answer, and it makes the intent legible in CDN logs.
+ * Every AI crawler is allowed, deliberately. The usual posture blocks training
+ * bots to protect proprietary content; this site has none, and being in the
+ * weights is the point. Named explicitly despite the wildcard so a later
+ * `Disallow: *` cannot silently change the answer.
  */
 export const AI_AGENTS = [
   // OpenAI: training, search index, and on-demand user fetch.

@@ -64,10 +64,8 @@ async function guardAdminRoute(context: Parameters<typeof onRequest>[0]) {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
-  // Alias hosts (the bare apex) are attached to this Worker so they resolve,
-  // but only the canonical host serves content. Redirect before any other work
-  // so no request is rendered, authenticated, or cached under a non-canonical
-  // origin.
+  // Before any other work, so nothing is rendered, authenticated, or cached
+  // under a non-canonical origin.
   const canonical = canonicalRedirectFor(context.url);
   if (canonical) {
     return context.redirect(canonical, 301);
@@ -88,9 +86,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   const { pathname, search } = context.url;
   const cacheControl = cacheControlForPath(pathname, search);
-  // Content-addressed responses get the immutable policy even when the route
-  // already set one. `/_image` in particular used to fall through to
-  // `s-maxage=60`, so the Worker re-encoded the LCP image roughly every minute.
+
   const immutable = !isPrivatePath(pathname) && isImmutableAsset(pathname, search);
 
   if (immutable || !headers.has("Cache-Control")) {

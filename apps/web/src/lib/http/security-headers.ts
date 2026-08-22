@@ -1,7 +1,6 @@
 const STREAM_CUSTOMER = "customer-pdxnd9di8ybc2kur.cloudflarestream.com";
-// Cloudflare Web Analytics is injected at the edge, so the script origin and
-// the beacon's reporting origin both have to be allowed even though nothing in
-// this codebase requests them.
+// Injected at the edge, so both origins need allowing though nothing here
+// requests them.
 const CF_INSIGHTS_SCRIPT = "https://static.cloudflareinsights.com";
 const CF_INSIGHTS_BEACON = "https://cloudflareinsights.com";
 
@@ -43,10 +42,8 @@ export function applySecurityHeaders(
   headers.set("X-Frame-Options", "DENY");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  // Severs the opener relationship for anything this site launches, so a page
-  // opened from here cannot reach back through `window.opener`. Safe at
-  // `same-origin` because no flow here depends on talking to a popup — the
-  // Stream player and Turnstile are iframes, which this does not affect.
+  // Safe at `same-origin`: nothing here talks to a popup, and the Stream player
+  // and Turnstile are iframes, which COOP does not govern.
   headers.set("Cross-Origin-Opener-Policy", "same-origin");
   headers.set(
     "Permissions-Policy",

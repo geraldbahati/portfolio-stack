@@ -35,11 +35,9 @@ export const db = Cloudflare.D1.Database("database", {
   migrationsDir: "../../packages/db/src/migrations",
 });
 
-// The media bucket predates this stack and is shared with the site currently
-// served from the apex. Alchemy reconciles CORS and lifecycle rules to exactly
-// what is declared here, so both must mirror the live bucket: omitting them
-// deletes the browser read/upload policy and the multipart abort rule that
-// bucket already relies on.
+// This bucket predates the stack and is shared. Alchemy reconciles CORS and
+// lifecycle rules to exactly what is declared, so omitting them deletes the
+// live policies. Keep these mirroring the bucket.
 export const media = Cloudflare.R2.Bucket("media", {
   name: r2BucketName,
   cors: [
@@ -130,11 +128,8 @@ export default Alchemy.Stack(
       compatibility: {
         date: WORKERS_COMPATIBILITY_DATE,
       },
-      // Non-canonical hostnames are attached as aliases rather than Alchemy
-      // `redirects`. A `redirects` entry writes a rule into the zone's
-      // dynamic-redirect phase, which needs zone ruleset credentials that
-      // Cloudflare's OAuth scopes do not cover. The web middleware issues the
-      // 301 instead, so the redirect stays in code and under test.
+      // Aliases, not Alchemy `redirects`: that writes a zone ruleset rule, which
+      // Cloudflare's OAuth scopes cannot grant. The middleware issues the 301.
       domain: webDomain
         ? {
             name: webDomain,

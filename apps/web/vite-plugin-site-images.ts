@@ -91,9 +91,6 @@ async function encodePreset(
   };
 
   for (const format of IMAGE_FORMATS) {
-    // AVIF needs a lower quality number than WebP to land at comparable
-    // perceived quality; matching them makes AVIF the larger file on noisy
-    // photographs, which is the opposite of the point.
     const quality = format === "avif" ? avifQuality(spec.quality) : spec.quality;
 
     for (const targetWidth of widths) {

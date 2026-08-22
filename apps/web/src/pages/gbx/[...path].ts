@@ -18,16 +18,8 @@ const hopByHop = new Set([
   "cookie",
 ]);
 
-/**
- * Resolve a `/gbx/*` path to its upstream PostHog URL.
- *
- * Asset requests go to the CDN host and ingest requests to the API host, but
- * the `static/` segment is part of the upstream path on both — PostHog serves
- * its lazily loaded chunks (web vitals, surveys, dead-click autocapture) at
- * `/static/<version>/<chunk>.js`. Stripping the segment made every one of
- * those chunks 404, which the browser then refused to execute for having no
- * MIME type.
- */
+/** Assets go to the CDN host, ingest to the API host. `static/` belongs to the
+ * upstream path on both, so it is routed on, not stripped. */
 export function posthogTarget(path: string, search: string): string {
   const isStatic = path === "static" || path.startsWith("static/");
   const base = isStatic ? ASSET_HOST : INGEST_HOST;
@@ -63,10 +55,8 @@ async function proxyPostHog({ params, request }: Parameters<APIRoute>[0]) {
   const outbound = new Headers(response.headers);
   outbound.delete("set-cookie");
 
-  // Upstream serves its 404s with `max-age=14400`. Passing that through pins a
-  // failure into every visitor's cache for four hours, so a momentary upstream
-  // problem long outlives its cause and no redeploy can clear it. Errors are
-  // never worth caching here — let the next page load retry.
+  // Upstream sends `max-age=14400` on 404s; passing that through would pin a
+  // transient failure into every visitor's cache for four hours.
   if (!response.ok) {
     outbound.set("Cache-Control", "no-store");
     outbound.delete("Expires");

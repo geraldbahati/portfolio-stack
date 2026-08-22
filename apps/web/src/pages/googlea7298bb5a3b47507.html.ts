@@ -1,19 +1,9 @@
 import type { APIRoute } from "astro";
 
 /**
- * Google Search Console site verification.
- *
- * Served from a route rather than `public/` on purpose: the Cloudflare asset
- * handler strips `.html` from static files, so `public/` would answer this
- * exact path with a 307 to the extensionless URL. Google fetches the literal
- * filename it issued and treats a redirect as a failed check, so the route
- * has to own the path and return 200 directly.
- *
- * The body is the single line Google generated; it must match byte for byte.
- *
- * Not prerendered either: prerendering emits a static `.html` file, which
- * lands back under the same asset handler and redirects again. Rendering on
- * request keeps the path with the Worker.
+ * Google Search Console verification. Google fetches this exact filename and
+ * treats a redirect as failure, so it cannot be a static file or prerendered —
+ * both route through the Cloudflare asset handler, which strips `.html`.
  */
 export const prerender = false;
 

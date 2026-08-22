@@ -137,19 +137,11 @@ export function toAbsoluteSiteUrl(value: string) {
 
 export const OG_IMAGE_URL = toAbsoluteSiteUrl(OG_IMAGE.path);
 
-/**
- * Hostnames that serve the Worker but are not canonical. Each is attached as
- * a Cloudflare custom domain so it resolves and terminates TLS; the permanent
- * redirect to {@link SITE_URL} is issued by the middleware rather than a zone
- * redirect rule, which keeps the behaviour in code and under test.
- */
+/** Hostnames attached to the Worker that redirect to {@link SITE_URL}. */
 export const ALIAS_HOSTS = ["geraldbahati.dev"] as const;
 
-/**
- * The absolute canonical URL an alias request should be redirected to, or
- * `null` when the request is already on a host that serves content. Path and
- * query are preserved so deep links survive the move to the canonical host.
- */
+/** Canonical URL for an alias request, or `null` if already canonical. Path
+ * and query are preserved so deep links survive the redirect. */
 export function canonicalRedirectFor(url: URL): string | null {
   if (!ALIAS_HOSTS.includes(url.hostname as (typeof ALIAS_HOSTS)[number])) {
     return null;

@@ -1,19 +1,12 @@
 /**
- * Per-isolate memo for public, visitor-independent data.
+ * Per-isolate memo for public, visitor-independent data. Repeating the settings
+ * and project round trips per request is the bulk of TTFB. The TTL matches the
+ * `s-maxage=60` these responses already advertise, so it adds no new staleness.
  *
- * Rendering a page costs one API round trip for site settings and another for
- * the project list, and a Worker isolate serves many requests, so repeating
- * them per request is the bulk of TTFB. The TTL matches the `s-maxage=60` the
- * responses already advertise, so this adds no staleness that callers of the
- * page were not already allowed to see.
+ * Retention is off in development, where it would only hide writes. `MODE` is
+ * "development" for the dev server alone — vitest reports "test" — so tests and
+ * production both exercise the real TTL.
  */
-// The memo is a production TTFB optimization. While the app runs in
-// development it would only hide writes — an admin publish stays invisible on
-// the public page until the entry lapses — so entries are not retained there.
-// Concurrent requests still share one in-flight call, which carries no
-// staleness. `MODE` is "development" only for the running dev server; vitest
-// reports "test" and production builds report "production", so both keep the
-// real TTL under test.
 const DEFAULT_TTL_MS = import.meta.env.MODE === "development" ? 0 : 60_000;
 
 interface Entry<T> {

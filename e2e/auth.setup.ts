@@ -45,15 +45,9 @@ setup("authenticate the isolated admin account", async ({ page, request }) => {
   await mkdir(path.dirname(ADMIN_AUTH_FILE), { recursive: true });
   await page.context().storageState({ path: ADMIN_AUTH_FILE });
 
-  // Alchemy reports the dev port ready before Vite has finished optimizing
-  // dependencies, and the program reloads that follow abort in-flight module
-  // and image requests. Load the home page until one complete load reports no
-  // upstream failure, so the projects that depend on this setup meet a settled
-  // server rather than a restarting one.
-  // A single clean load is not proof the server has settled: Vite reloads the
-  // program more than once after a cold dependency optimization, so a reload
-  // can still land between this warm-up and the first real test. Require two
-  // consecutive clean loads before handing over.
+  // Alchemy reports the port ready before Vite finishes optimizing dependencies,
+  // and the reloads that follow abort in-flight requests. Vite reloads more than
+  // once on a cold cache, so one clean load is not proof it has settled.
   let consecutiveCleanLoads = 0;
   await expect
     .poll(
@@ -66,9 +60,8 @@ setup("authenticate the isolated admin account", async ({ page, request }) => {
         page.on("response", recordFailure);
         try {
           await page.goto("/", { waitUntil: "load" });
-          // The hero's own h1, matched by level rather than by name: the name
-          // is marketing copy, and the point here is only that the page
-          // rendered rather than that it still says a particular thing.
+          // Matched by level, not name: the heading text is marketing copy and
+          // this only needs to know the page rendered.
           await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
         } finally {
           page.off("response", recordFailure);
