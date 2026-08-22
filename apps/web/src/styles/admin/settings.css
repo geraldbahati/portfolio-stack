@@ -1,0 +1,81 @@
+.admin-settings-status {
+  display: grid;
+  margin-top: 1.5rem;
+  border: 1px solid var(--admin-line);
+  background: rgba(251, 250, 246, 0.82);
+}
+
+.admin-settings-status__item {
+  min-width: 0;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--admin-line);
+}
+
+.admin-settings-status__item:last-child {
+  border-bottom: 0;
+}
+
+.admin-settings-status span,
+.admin-settings-status strong {
+  display: block;
+}
+
+.admin-settings-status span {
+  color: var(--admin-muted);
+  font-size: 0.57rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-settings-status strong {
+  margin-top: 0.45rem;
+  overflow: hidden;
+  font-size: 0.72rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-settings-form {
+  display: grid;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.admin-settings-boundary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  padding: 1.2rem;
+  border: 1px solid rgba(230, 109, 50, 0.35);
+  background: #171716;
+  color: #fff;
+}
+
+.admin-settings-boundary__copy {
+  max-width: 65ch;
+}
+
+.admin-settings-boundary strong,
+.admin-settings-boundary p {
+  margin: 0;
+}
+
+.admin-settings-boundary strong {
+  font-size: 0.76rem;
+}
+
+.admin-settings-boundary p {
+  margin-top: 0.4rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.64rem;
+  line-height: 1.6;
+}
+
+.admin-settings-boundary .admin-button--primary {
+  border-color: var(--admin-orange);
+  background: var(--admin-orange);
+  color: var(--admin-ink);
+}

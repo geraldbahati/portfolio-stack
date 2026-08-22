@@ -1,0 +1,49 @@
+---
+import { ADMIN_NAVIGATION, isAdminNavigationActive } from "../../lib/admin/navigation";
+import AdminIcon from "./AdminIcon.astro";
+
+interface Props {
+  currentPath: string;
+  compact?: boolean;
+}
+
+const { currentPath, compact = false } = Astro.props;
+---
+
+<nav aria-label="Admin navigation" class:list={["admin-nav", compact && "admin-nav--compact"]}>
+  <p class="admin-nav__label">Workspace</p>
+  <ul class="admin-nav__list">
+    {
+      ADMIN_NAVIGATION.map((item) => {
+        const active = item.available && isAdminNavigationActive(currentPath, item.href);
+        return (
+          <li>
+            {item.available ? (
+              <a
+                href={item.href}
+                class:list={["admin-nav__item", active && "is-active"]}
+                aria-current={active ? "page" : undefined}
+              >
+                <span class="admin-nav__icon"><AdminIcon name={item.icon} /></span>
+                <span class="admin-nav__copy">
+                  <span class="admin-nav__name">{item.label}</span>
+                  {!compact && <span class="admin-nav__description">{item.description}</span>}
+                </span>
+                <AdminIcon name="arrow" size={16} />
+              </a>
+            ) : (
+              <span class="admin-nav__item is-disabled" aria-disabled="true">
+                <span class="admin-nav__icon"><AdminIcon name={item.icon} /></span>
+                <span class="admin-nav__copy">
+                  <span class="admin-nav__name">{item.label}</span>
+                  {!compact && <span class="admin-nav__description">{item.description}</span>}
+                </span>
+                <span class="admin-nav__soon">Soon</span>
+              </span>
+            )}
+          </li>
+        );
+      })
+    }
+  </ul>
+</nav>

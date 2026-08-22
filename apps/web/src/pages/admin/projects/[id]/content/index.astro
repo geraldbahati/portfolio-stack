@@ -1,0 +1,217 @@
+---
+import AdminHeader from "../../../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../../../components/admin/AdminNotice.astro";
+import AdminLayout from "../../../../../layouts/AdminLayout.astro";
+import {
+  formatChallengesText,
+  formatColorsText,
+  formatGalleryText,
+  formatMetricsText,
+} from "../../../../../lib/admin/case-study-form";
+import { createServerOrpc } from "../../../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+const id = Astro.params.id;
+if (!admin) return Astro.redirect(`/login?returnTo=${encodeURIComponent(Astro.url.pathname)}`, 302);
+if (!id) return Astro.redirect("/admin/projects?error=not-found", 302);
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+const content = await api.admin.projects.content({ id }).catch(() => null);
+if (!content) return Astro.redirect("/admin/projects?error=not-found", 302);
+
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+const notices: Record<string, string> = {
+  metrics: "Project metrics updated.",
+  challenges: "Project challenges updated.",
+  gallery: "Project gallery updated.",
+  testimonial: "Project testimonial saved.",
+  "testimonial-removed": "Project testimonial removed.",
+  presentation: "Colors and related projects updated.",
+};
+const errors: Record<string, string> = {
+  invalid: "The section contains invalid or incomplete data. Review the format and try again.",
+  "not-ready": "The confirmation did not match the project slug.",
+  "save-failed": "The case-study content could not be saved. Please try again.",
+};
+
+const selectedRelations = new Set(content.details?.relatedProjectIds ?? []);
+const saveAction = `/admin/projects/${encodeURIComponent(id)}/content/save`;
+---
+
+<AdminLayout
+  title={`${content.project.title} content`}
+  description="Manage structured project case-study content."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="Projects / Case-study content"
+    title={content.project.title}
+    description="Manage the structured sections rendered below the main project narrative. Saving a section does not change publication status."
+  >
+    <div slot="actions" class="admin-header-actions">
+      <a href={`/admin/projects/${id}/edit`} class="admin-button admin-button--secondary">Core details</a>
+      <a href="/admin/projects" class="admin-button admin-button--secondary">All projects</a>
+    </div>
+  </AdminHeader>
+
+  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+
+  <section class="admin-content-summary" aria-label="Case-study content summary">
+    <article><strong>{content.metrics.length}</strong><span>Metrics</span></article>
+    <article><strong>{content.challenges.length}</strong><span>Challenges</span></article>
+    <article><strong>{content.gallery.length}</strong><span>Gallery items</span></article>
+    <article><strong>{content.testimonial ? "Yes" : "No"}</strong><span>Testimonial</span></article>
+  </section>
+
+  <div class="admin-content-workspace">
+    <details class="admin-content-editor" open>
+      <summary>
+        <span><strong>Metrics and charts</strong><small>Performance rings on the public case study</small></span>
+        <b>{content.metrics.length}</b>
+      </summary>
+      <form method="post" action={saveAction}>
+        <input type="hidden" name="section" value="metrics" />
+        <label class="admin-field">
+          <span>Metrics</span>
+          <textarea name="content" rows="8" spellcheck="false" placeholder="85% | Faster checkout | speed">{formatMetricsText(content.metrics)}</textarea>
+          <small>One metric per line: <code>value | label | optional icon</code>. Order controls chart order.</small>
+        </label>
+        {
+          content.metrics.length > 0 && (
+            <label class="admin-clear-confirmation">
+              <span>Only when clearing all metrics: type <strong>{id}</strong></span>
+              <input name="confirmation" autocomplete="off" />
+            </label>
+          )
+        }
+        <div class="admin-inline-actions"><button class="admin-button admin-button--primary" type="submit">Save metrics</button></div>
+      </form>
+    </details>
+
+    <details class="admin-content-editor">
+      <summary>
+        <span><strong>Challenges</strong><small>Markdown problem-and-solution narratives</small></span>
+        <b>{content.challenges.length}</b>
+      </summary>
+      <form method="post" action={saveAction}>
+        <input type="hidden" name="section" value="challenges" />
+        <label class="admin-field">
+          <span>Challenge blocks</span>
+          <textarea name="content" rows="18" placeholder={`Payment complexity\nAdded **M-Pesa** and card payments.\n---\nPerformance\nMoved caching to the edge.`}>{formatChallengesText(content.challenges)}</textarea>
+          <small>First line is the heading. Markdown content follows. Put <code>---</code> on its own line between challenges.</small>
+        </label>
+        {
+          content.challenges.length > 0 && (
+            <label class="admin-clear-confirmation">
+              <span>Only when clearing all challenges: type <strong>{id}</strong></span>
+              <input name="confirmation" autocomplete="off" />
+            </label>
+          )
+        }
+        <div class="admin-inline-actions"><button class="admin-button admin-button--primary" type="submit">Save challenges</button></div>
+      </form>
+    </details>
+
+    <details class="admin-content-editor">
+      <summary>
+        <span><strong>Gallery</strong><small>Feature image and stacked project mockups</small></span>
+        <b>{content.gallery.length}</b>
+      </summary>
+      <form method="post" action={saveAction}>
+        <input type="hidden" name="section" value="gallery" />
+        <label class="admin-field">
+          <span>Gallery rows</span>
+          <textarea name="content" rows="14" spellcheck="false" placeholder="https://media.geraldbahati.dev/project.webp | feature | desktop | 1600 | 900 | Dashboard overview | Main dashboard">{formatGalleryText(content.gallery)}</textarea>
+          <small>One item per line: <code>URL | feature/stack | device | width | height | alt text | caption</code>. Devices: desktop, mobile, tablet, or full-width.</small>
+        </label>
+        {
+          content.gallery.length > 0 && (
+            <label class="admin-clear-confirmation">
+              <span>Only when clearing the whole gallery: type <strong>{id}</strong></span>
+              <input name="confirmation" autocomplete="off" />
+            </label>
+          )
+        }
+        <div class="admin-inline-actions"><button class="admin-button admin-button--primary" type="submit">Save gallery</button></div>
+      </form>
+    </details>
+
+    <details class="admin-content-editor">
+      <summary>
+        <span><strong>Testimonial</strong><small>Optional client quote and attribution</small></span>
+        <b>{content.testimonial ? "1" : "0"}</b>
+      </summary>
+      <form method="post" action={saveAction} class="admin-content-form-grid">
+        <input type="hidden" name="section" value="testimonial" />
+        <input type="hidden" name="intent" value="save" />
+        <label class="admin-field admin-field--wide">
+          <span>Quote</span>
+          <textarea name="quote" rows="6" maxlength="2000" required>{content.testimonial?.quote ?? ""}</textarea>
+        </label>
+        <label class="admin-field">
+          <span>Author name</span>
+          <input name="authorName" value={content.testimonial?.authorName ?? ""} maxlength="120" required />
+        </label>
+        <label class="admin-field">
+          <span>Role</span>
+          <input name="authorRole" value={content.testimonial?.authorRole ?? ""} maxlength="120" />
+        </label>
+        <label class="admin-field">
+          <span>Company</span>
+          <input name="authorCompany" value={content.testimonial?.authorCompany ?? ""} maxlength="120" />
+        </label>
+        <label class="admin-field">
+          <span>Approved author image URL</span>
+          <input name="authorImage" value={content.testimonial?.authorImage ?? ""} type="url" maxlength="2048" />
+        </label>
+        <div class="admin-inline-actions admin-field--wide"><button class="admin-button admin-button--primary" type="submit">Save testimonial</button></div>
+      </form>
+      {
+        content.testimonial && (
+          <form method="post" action={saveAction} class="admin-remove-content-form">
+            <input type="hidden" name="section" value="testimonial" />
+            <input type="hidden" name="intent" value="remove" />
+            <label class="admin-field">
+              <span>Type <strong>{id}</strong> to remove the testimonial</span>
+              <input name="confirmation" required autocomplete="off" />
+            </label>
+            <button class="admin-button admin-button--danger" type="submit">Remove testimonial</button>
+          </form>
+        )
+      }
+    </details>
+
+    <details class="admin-content-editor">
+      <summary>
+        <span><strong>Presentation and relations</strong><small>Color palette and related case studies</small></span>
+        <b>{content.details?.colorPalette?.length ?? 0}</b>
+      </summary>
+      <form method="post" action={saveAction} class="admin-content-form-grid">
+        <input type="hidden" name="section" value="presentation" />
+        <label class="admin-field admin-field--wide">
+          <span>Color palette</span>
+          <textarea name="colors" rows="7" spellcheck="false" placeholder="#111111 | Ink">{formatColorsText(content.details?.colorPalette ?? [])}</textarea>
+          <small>One color per line: <code>#RRGGBB | optional name</code>. These swatches appear beside the case-study narrative.</small>
+        </label>
+        <fieldset class="admin-related-projects admin-field--wide">
+          <legend>Related projects</legend>
+          {
+            content.projectChoices.length > 0 ? (
+              content.projectChoices.map((project) => (
+                <label>
+                  <input type="checkbox" name="relatedProjectIds" value={project.id} checked={selectedRelations.has(project.id)} />
+                  <span><strong>{project.title}</strong><small>{project.isPublished ? "Published" : "Draft"} · /{project.id}</small></span>
+                </label>
+              ))
+            ) : (
+              <p>No other projects are available.</p>
+            )
+          }
+        </fieldset>
+        <div class="admin-inline-actions admin-field--wide"><button class="admin-button admin-button--primary" type="submit">Save presentation</button></div>
+      </form>
+    </details>
+  </div>
+</AdminLayout>

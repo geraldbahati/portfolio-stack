@@ -1,0 +1,205 @@
+---
+import { PUBLIC_SERVER_URL } from "astro:env/client";
+import {
+  ADMIN_IMAGE_TYPES,
+  ADMIN_MEDIA_FOLDERS,
+  ADMIN_MEDIA_MAX_BYTES,
+  isAdminMediaFolder,
+} from "@portfolio-stack/media/admin";
+
+import AdminHeader from "../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../components/admin/AdminNotice.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin%2Fmedia", 302);
+
+const rawPrefix = Astro.url.searchParams.get("prefix");
+const prefix = rawPrefix && isAdminMediaFolder(rawPrefix) ? rawPrefix : "all";
+const cursor = Astro.url.searchParams.get("cursor")?.slice(0, 2048) ?? "";
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+const uploadUrl = new URL("/internal/admin-media/upload", PUBLIC_SERVER_URL).toString();
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+type MediaList = Awaited<ReturnType<typeof api.admin.media.list>>;
+let result: MediaList | null = null;
+let dataUnavailable = false;
+try {
+  result = await api.admin.media.list({ prefix, cursor, limit: 48 });
+} catch {
+  dataUnavailable = true;
+}
+
+const notices: Record<string, string> = {
+  uploaded: "The image was uploaded and is ready to use.",
+  deleted: "The media object was permanently deleted.",
+};
+const errors: Record<string, string> = {
+  "invalid-confirmation": "The object key confirmation did not match.",
+  "not-found": "That media object no longer exists.",
+  "delete-failed": "The media object could not be deleted. Please try again.",
+};
+const acceptedTypes = Object.keys(ADMIN_IMAGE_TYPES).join(",");
+const maxSizeMiB = ADMIN_MEDIA_MAX_BYTES / 1024 / 1024;
+const dateFormatter = new Intl.DateTimeFormat("en-KE", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+const byteFormatter = new Intl.NumberFormat("en", { maximumFractionDigits: 1 });
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${byteFormatter.format(bytes / 1024)} KiB`;
+  return `${byteFormatter.format(bytes / 1024 / 1024)} MiB`;
+}
+function nextHref(nextCursor: string) {
+  const params = new URLSearchParams();
+  if (prefix !== "all") params.set("prefix", prefix);
+  params.set("cursor", nextCursor);
+  return `/admin/media?${params.toString()}`;
+}
+---
+
+<AdminLayout
+  title="Media"
+  description="Upload and manage portfolio images stored in Cloudflare R2."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="R2 image library"
+    title="Media"
+    description="Upload immutable portfolio images, copy their public URLs, and remove unused objects through explicit controls."
+  />
+
+  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+  {dataUnavailable && <AdminNotice kind="error" message="Media data is temporarily unavailable." />}
+
+  <section class="admin-media-upload admin-panel" aria-labelledby="media-upload-title">
+    <div class="admin-media-upload__intro">
+      <p class="admin-kicker">Direct upload</p>
+      <h2 id="media-upload-title">Add an image</h2>
+      <p>The file streams directly to R2. Use meaningful alt text now so the asset remains accessible wherever it appears.</p>
+    </div>
+    <form data-media-upload data-upload-url={uploadUrl}>
+      <label class="admin-field admin-field--wide">
+        <span>Image <em>Required</em></span>
+        <input name="file" type="file" accept={acceptedTypes} required />
+        <small>AVIF, GIF, JPEG, PNG, or WebP. Maximum {maxSizeMiB} MiB.</small>
+      </label>
+      <label class="admin-field">
+        <span>Folder <em>Required</em></span>
+        <select name="folder" required>
+          {ADMIN_MEDIA_FOLDERS.map((folder) => <option value={folder}>{folder}</option>)}
+        </select>
+      </label>
+      <label class="admin-field">
+        <span>Alt text <em>Required</em></span>
+        <input name="alt" type="text" minlength="2" maxlength="240" required placeholder="Describe the image's purpose" />
+      </label>
+      <div class="admin-media-upload__submit">
+        <button type="submit" class="admin-button admin-button--primary">Upload image</button>
+        <p data-upload-status role="status" aria-live="polite">Files receive immutable, content-type-safe object keys.</p>
+      </div>
+    </form>
+    <noscript><p class="admin-media-noscript">Uploading requires JavaScript. Browsing, copying URLs, and deleting objects remain server-rendered.</p></noscript>
+  </section>
+
+  <form method="get" action="/admin/media" class="admin-project-filters">
+    <label class="admin-filter-field">
+      <span class="sr-only">Media folder</span>
+      <select name="prefix">
+        <option value="all" selected={prefix === "all"}>All folders</option>
+        {ADMIN_MEDIA_FOLDERS.map((folder) => <option value={folder} selected={prefix === folder}>{folder}</option>)}
+      </select>
+    </label>
+    <button type="submit" class="admin-button admin-button--secondary">Filter library</button>
+    {(prefix !== "all" || cursor) && <a href="/admin/media" class="admin-filter-reset">Reset</a>}
+  </form>
+
+  <section class="admin-media-library" aria-labelledby="media-library-title">
+    <header class="admin-project-table__header">
+      <div>
+        <h2 id="media-library-title">Image library</h2>
+        <p>{result?.objects.length ?? 0} objects on this page{prefix !== "all" ? ` in ${prefix}` : ""}</p>
+      </div>
+      {cursor && <a href={prefix === "all" ? "/admin/media" : `/admin/media?prefix=${prefix}`}>Back to first page</a>}
+    </header>
+
+    {result?.objects.length ? (
+      <div class="admin-media-grid">
+        {result.objects.map((asset, index) => {
+          const inputId = `media-url-${index}`;
+          return (
+            <article class="admin-media-card" data-media-key={asset.key}>
+              <div class="admin-media-card__preview">
+                <img
+                  src={asset.previewUrl}
+                  alt={asset.alt}
+                  loading="lazy"
+                  decoding="async"
+                  crossorigin="use-credentials"
+                  width="640"
+                  height="420"
+                />
+              </div>
+              <div class="admin-media-card__body">
+                <div class="admin-media-card__heading">
+                  <div class="admin-media-card__title">
+                    <h3>{asset.originalName || asset.key.split("/").at(-1)}</h3>
+                    <p>{asset.alt || "No alt text stored"}</p>
+                  </div>
+                  <span>{asset.contentType.replace("image/", "")}</span>
+                </div>
+                <dl>
+                  <div><dt>Size</dt><dd>{formatBytes(asset.size)}</dd></div>
+                  <div><dt>Uploaded</dt><dd><time datetime={asset.uploaded}>{dateFormatter.format(new Date(asset.uploaded))}</time></dd></div>
+                </dl>
+                <code>{asset.key}</code>
+                <div class="admin-media-card__url">
+                  <label for={inputId}>Public URL</label>
+                  <div class="admin-media-card__url-row">
+                    <input id={inputId} value={asset.publicUrl} readonly />
+                    <button type="button" class="admin-button admin-button--secondary" data-copy-media-url={inputId}>Copy URL</button>
+                  </div>
+                </div>
+                <details class="admin-media-card__delete">
+                  <summary>Delete asset</summary>
+                  <p>Permanent action. Type the full object key to confirm.</p>
+                  <form method="post" action="/admin/media/delete">
+                    <input type="hidden" name="key" value={asset.key} />
+                    <label>
+                      <span class="sr-only">Confirm object key</span>
+                      <input name="confirmation" required autocomplete="off" placeholder={asset.key} />
+                    </label>
+                    <button type="submit" class="admin-button admin-button--danger">Delete permanently</button>
+                  </form>
+                </details>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    ) : result ? (
+      <div class="admin-project-empty">
+        <span aria-hidden="true">R2</span>
+        <h2>No images in this view</h2>
+        <p>Upload the first image or choose another folder.</p>
+      </div>
+    ) : null}
+  </section>
+
+  {result?.truncated && (
+    <nav class="admin-pagination" aria-label="Media pages">
+      <a href={prefix === "all" ? "/admin/media" : `/admin/media?prefix=${prefix}`}>First page</a>
+      <span aria-hidden="true">—</span>
+      <a href={nextHref(result.cursor)}>Next page</a>
+    </nav>
+  )}
+</AdminLayout>
+
+<script>
+  import "../../../lib/admin/media-library";
+</script>

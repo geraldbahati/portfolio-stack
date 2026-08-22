@@ -1,0 +1,12 @@
+---
+interface Props {
+  kind: "success" | "error" | "info";
+  message: string;
+}
+
+const { kind, message } = Astro.props;
+---
+
+<p class:list={["admin-notice", `admin-notice--${kind}`]} role={kind === "error" ? "alert" : "status"}>
+  {message}
+</p>

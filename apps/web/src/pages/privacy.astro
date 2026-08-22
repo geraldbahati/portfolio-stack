@@ -1,133 +1,16 @@
 ---
-import { marked } from "marked";
-
-import privacySource from "../content/privacy.md?raw";
+import PrivacyPage from "../features/privacy-page/PrivacyPage.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { PAGE_COPY } from "../lib/site";
-import "../sections/privacy-page/privacy-page.css";
-import "../sections/simple-legal-page/simple-legal-page.css";
-
-const sourceSections = privacySource
-  .trim()
-  .split(/\n(?=##\s)/)
-  .slice(1);
-const policySections = sourceSections.map((source, index) => {
-  const [headingLine = "", ...contentLines] = source.split("\n");
-  const title = headingLine.replace(/^##\s+/, "").trim();
-  const label = title.replace(/^\d+\.\s*/, "");
-  const slug = label
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-
-  return {
-    id: `section-${index + 1}-${slug}`,
-    title,
-    html: marked.parse(contentLines.join("\n").trim(), {
-      async: false,
-      breaks: false,
-      gfm: true,
-    }) as string,
-  };
-});
+import { simplePageJsonLd } from "../lib/seo/json-ld";
+import { PAGE_COPY } from "../lib/seo/page-copy";
 ---
 
-<SiteLayout title={`${PAGE_COPY.privacy.title} | Gerald Bahati`} description={PAGE_COPY.privacy.description}>
-  <div class="simple-legal-page privacy-page">
-    <div class="simple-legal-container">
-      <header class="simple-legal-header">
-        <h1>Privacy Policy</h1>
-        <div class="simple-legal-title-rule" aria-hidden="true"></div>
-        <dl class="privacy-meta">
-          <div>
-            <dt>Effective date</dt>
-            <dd>26 July 2026</dd>
-          </div>
-          <div>
-            <dt>Version</dt>
-            <dd>2.3</dd>
-          </div>
-        </dl>
-      </header>
-
-      <article class="simple-legal-content" aria-label="Privacy Policy">
-        {
-          policySections.map((section) => (
-            <section
-              id={section.id}
-              class="simple-legal-section privacy-section"
-              aria-labelledby={`${section.id}-title`}
-            >
-              <h2 id={`${section.id}-title`}>{section.title}</h2>
-              <div class="privacy-copy" set:html={section.html} />
-            </section>
-          ))
-        }
-
-        <section
-          id="analytics-preferences"
-          class="privacy-preferences"
-          aria-labelledby="analytics-preferences-title"
-        >
-          <h2 id="analytics-preferences-title">Analytics preferences</h2>
-          <p>
-            Analytics are hosted in the EU and only collected with your consent. You can change your
-            choice here at any time, and the change takes effect immediately.
-          </p>
-          <p id="consent-status" class="privacy-consent-status" aria-live="polite">
-            You haven't chosen yet. Analytics are off until you do.
-          </p>
-          <div class="privacy-preference-actions" data-preference-actions>
-            <button type="button" data-consent="accepted" aria-pressed="false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="m20 6-11 11-5-5"></path>
-              </svg>
-              Allow analytics
-            </button>
-            <button type="button" data-consent="rejected" aria-pressed="false">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="m20 6-11 11-5-5"></path>
-              </svg>
-              Don't allow analytics
-            </button>
-          </div>
-        </section>
-      </article>
-    </div>
-  </div>
+<SiteLayout
+  title={PAGE_COPY.privacy.title}
+  description={PAGE_COPY.privacy.description}
+  keywords={PAGE_COPY.privacy.keywords}
+  indexable={PAGE_COPY.privacy.indexable}
+  jsonLd={simplePageJsonLd(PAGE_COPY.privacy)}
+>
+  <PrivacyPage />
 </SiteLayout>
-
-<script>
-  import { applyConsent } from "@portfolio-stack/analytics/posthog-client";
-  import { getConsent, setConsent, subscribeToConsent } from "@portfolio-stack/analytics/consent";
-
-  const status = document.getElementById("consent-status");
-  const buttons = [...document.querySelectorAll<HTMLButtonElement>("[data-consent]")];
-  const labels = {
-    pending: "You haven't chosen yet. Analytics are off until you do.",
-    accepted: "Analytics are on. Thank you — it helps improve the site.",
-    rejected: "Analytics are off. Nothing is being collected.",
-  } as const;
-
-  function render() {
-    const consent = getConsent();
-    if (status) {
-      status.textContent = labels[consent];
-    }
-    for (const button of buttons) {
-      button.setAttribute("aria-pressed", String(button.dataset.consent === consent));
-    }
-  }
-
-  for (const button of buttons) {
-    button.addEventListener("click", () => {
-      const decision = button.dataset.consent === "accepted" ? "accepted" : "rejected";
-      setConsent(decision);
-      void applyConsent(decision);
-    });
-  }
-
-  subscribeToConsent(render);
-  render();
-</script>

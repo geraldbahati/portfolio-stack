@@ -1,8 +1,10 @@
 import { PUBLIC_SERVER_URL } from "astro:env/client";
 import { defineMiddleware } from "astro:middleware";
 
-import { cacheControlForPath, isPrivatePath } from "./lib/cache";
-import { applySecurityHeaders } from "./lib/security-headers";
+import { parseAdminSessionUser } from "./lib/admin/session";
+import { cacheControlForPath, isImmutableAsset, isPrivatePath } from "./lib/http/cache";
+import { applySecurityHeaders } from "./lib/http/security-headers";
+import { canonicalRedirectFor } from "./lib/seo/site";
 
 function serverOrigin() {
   try {
@@ -41,6 +43,16 @@ async function guardAdminRoute(context: Parameters<typeof onRequest>[0]) {
         headers: { "Retry-After": "30" },
       });
     }
+
+    const admin = parseAdminSessionUser(await authResponse.json());
+    if (!admin) {
+      return new Response("Admin service unavailable", {
+        status: 503,
+        headers: { "Retry-After": "30" },
+      });
+    }
+
+    context.locals.admin = admin;
   } catch {
     return new Response("Admin service unavailable", {
       status: 503,
@@ -52,6 +64,15 @@ async function guardAdminRoute(context: Parameters<typeof onRequest>[0]) {
 }
 
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Alias hosts (the bare apex) are attached to this Worker so they resolve,
+  // but only the canonical host serves content. Redirect before any other work
+  // so no request is rendered, authenticated, or cached under a non-canonical
+  // origin.
+  const canonical = canonicalRedirectFor(context.url);
+  if (canonical) {
+    return context.redirect(canonical, 301);
+  }
+
   let response: Response;
 
   if (isAdminPath(context.url.pathname)) {
@@ -65,15 +86,22 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   applySecurityHeaders(headers, isDevelopment, serverOrigin());
 
-  if (!headers.has("Cache-Control")) {
-    headers.set("Cache-Control", cacheControlForPath(context.url.pathname));
+  const { pathname, search } = context.url;
+  const cacheControl = cacheControlForPath(pathname, search);
+  // Content-addressed responses get the immutable policy even when the route
+  // already set one. `/_image` in particular used to fall through to
+  // `s-maxage=60`, so the Worker re-encoded the LCP image roughly every minute.
+  const immutable = !isPrivatePath(pathname) && isImmutableAsset(pathname, search);
+
+  if (immutable || !headers.has("Cache-Control")) {
+    headers.set("Cache-Control", cacheControl);
   }
 
-  if (!isPrivatePath(context.url.pathname) && !headers.has("CDN-Cache-Control")) {
-    headers.set("CDN-Cache-Control", cacheControlForPath(context.url.pathname));
+  if (!isPrivatePath(pathname) && (immutable || !headers.has("CDN-Cache-Control"))) {
+    headers.set("CDN-Cache-Control", cacheControl);
   }
 
-  if (isPrivatePath(context.url.pathname)) {
+  if (isPrivatePath(pathname)) {
     headers.set("CDN-Cache-Control", "private, no-store");
     headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   }

@@ -1,0 +1,71 @@
+---
+import privacySource from "../../content/privacy.md?raw";
+import LegalPageShell from "../legal-page/LegalPageShell.astro";
+import { parsePrivacyPolicy } from "./policy";
+import "./privacy-page.css";
+
+const policySections = parsePrivacyPolicy(privacySource);
+---
+
+<LegalPageShell title="Privacy Policy" class="privacy-page">
+  <dl slot="meta" class="privacy-meta">
+    <div>
+      <dt>Effective date</dt>
+      <dd>21 August 2026</dd>
+    </div>
+    <div>
+      <dt>Version</dt>
+      <dd>2.4</dd>
+    </div>
+  </dl>
+
+  <article class="simple-legal-content" aria-label="Privacy Policy">
+    {
+      policySections.map((section) => (
+        <section
+          id={section.id}
+          class="simple-legal-section privacy-section"
+          aria-labelledby={`${section.id}-title`}
+        >
+          <h2 id={`${section.id}-title`}>{section.title}</h2>
+          <div class="privacy-copy" set:html={section.html} />
+        </section>
+      ))
+    }
+
+    <section
+      id="analytics-preferences"
+      class="privacy-preferences"
+      aria-labelledby="analytics-preferences-title"
+    >
+      <h2 id="analytics-preferences-title">Analytics preferences</h2>
+      <p>
+        Analytics are hosted in the EU and only collected with your consent. You can change your
+        choice here at any time, and the change takes effect immediately.
+      </p>
+      <p id="consent-status" class="privacy-consent-status" aria-live="polite">
+        You haven't chosen yet. Analytics are off until you do.
+      </p>
+      <div class="privacy-preference-actions" data-preference-actions>
+        <button type="button" data-consent="accepted" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="m20 6-11 11-5-5"></path>
+          </svg>
+          Allow analytics
+        </button>
+        <button type="button" data-consent="rejected" aria-pressed="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="m20 6-11 11-5-5"></path>
+          </svg>
+          Don't allow analytics
+        </button>
+      </div>
+    </section>
+  </article>
+</LegalPageShell>
+
+<script>
+  import { initPrivacyPreferences } from "./preferences";
+
+  initPrivacyPreferences();
+</script>

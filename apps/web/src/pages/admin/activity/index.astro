@@ -1,0 +1,146 @@
+---
+import {
+  adminActivityCategorySchema,
+  auditActionLabel,
+  auditMetadataSummary,
+} from "@portfolio-stack/api/schemas/admin/activity";
+
+import AdminHeader from "../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../components/admin/AdminNotice.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin%2Factivity", 302);
+
+const search = Astro.url.searchParams.get("q")?.trim().slice(0, 120) ?? "";
+const parsedCategory = adminActivityCategorySchema.safeParse(
+  Astro.url.searchParams.get("category"),
+);
+const category = parsedCategory.success ? parsedCategory.data : "all";
+const rawPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+type ActivityList = Awaited<ReturnType<typeof api.admin.activity.list>>;
+let result: ActivityList | null = null;
+try {
+  result = await api.admin.activity.list({ search, category, page, pageSize: 30 });
+} catch {
+  // The protected shell renders an explicit unavailable state below.
+}
+
+const categories = ["project", "message", "media", "settings", "stream"] as const;
+const dateTimeFormatter = new Intl.DateTimeFormat("en-KE", {
+  dateStyle: "medium",
+  timeStyle: "medium",
+  timeZone: "Africa/Nairobi",
+});
+
+function pageHref(targetPage: number) {
+  const params = new URLSearchParams();
+  if (search) params.set("q", search);
+  if (category !== "all") params.set("category", category);
+  if (targetPage > 1) params.set("page", String(targetPage));
+  const query = params.toString();
+  return `/admin/activity${query ? `?${query}` : ""}`;
+}
+
+function targetHref(entityType: string, entityId: string | null) {
+  if (entityType === "project" && entityId) {
+    return `/admin/projects/${encodeURIComponent(entityId)}/edit`;
+  }
+  if (entityType === "media") return "/admin/media";
+  if (entityType === "site-settings") return "/admin/settings";
+  return null;
+}
+---
+
+<AdminLayout
+  title="Activity"
+  description="Review the immutable operational history of admin mutations."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="Audit history"
+    title="Activity"
+    description="Review who changed portfolio data, what operation ran, and which record it affected. This history is read-only."
+  />
+
+  {!result && <AdminNotice kind="error" message="Activity data is temporarily unavailable." />}
+
+  <form method="get" action="/admin/activity" class="admin-project-filters" role="search">
+    <label class="admin-search-field">
+      <span class="sr-only">Search activity</span>
+      <input name="q" value={search} type="search" maxlength="120" placeholder="Search action, actor, or entity ID" />
+    </label>
+    <label class="admin-filter-field">
+      <span class="sr-only">Activity category</span>
+      <select name="category">
+        <option value="all" selected={category === "all"}>All activity</option>
+        {categories.map((item) => <option value={item} selected={category === item}>{item}</option>)}
+      </select>
+    </label>
+    <button type="submit" class="admin-button admin-button--secondary">Apply filters</button>
+    {(search || category !== "all") && <a href="/admin/activity" class="admin-filter-reset">Reset</a>}
+  </form>
+
+  <section class="admin-activity-log" aria-labelledby="activity-log-heading">
+    <header class="admin-project-table__header">
+      <div>
+        <h2 id="activity-log-heading">Audit events</h2>
+        <p>{result?.total ?? 0} {result?.total === 1 ? "event" : "events"} in this view</p>
+      </div>
+      {result && <span>Page {result.page} of {result.pageCount}</span>}
+    </header>
+
+    {result?.items.length ? (
+      <ol class="admin-activity-list">
+        {result.items.map((event) => {
+          const summary = auditMetadataSummary(event.metadata);
+          const href = targetHref(event.entityType, event.entityId);
+          const eventCategory = event.action.split(".")[0] ?? "system";
+          return (
+            <li class="admin-activity-event">
+              <span class:list={["admin-activity-event__marker", `is-${eventCategory}`]} aria-hidden="true" />
+              <article>
+                <header>
+                  <div>
+                    <span class="admin-activity-event__category">{eventCategory}</span>
+                    <h3>{auditActionLabel(event.action)}</h3>
+                  </div>
+                  <time datetime={new Date(event.createdAt).toISOString()}>{dateTimeFormatter.format(new Date(event.createdAt))}</time>
+                </header>
+                <div class="admin-activity-event__context">
+                  <span>Actor <strong>{event.actorEmail}</strong></span>
+                  <span>Entity <strong>{event.entityType}</strong></span>
+                  {event.entityId && <code>{event.entityId}</code>}
+                </div>
+                {(summary.length > 0 || href) && (
+                  <footer>
+                    {summary.length > 0 && <span>{summary.join(" · ")}</span>}
+                    {href && <a href={href}>Open target</a>}
+                  </footer>
+                )}
+              </article>
+            </li>
+          );
+        })}
+      </ol>
+    ) : result ? (
+      <div class="admin-project-empty">
+        <span aria-hidden="true">00</span>
+        <h2>{search || category !== "all" ? "No events match these filters" : "No audit events yet"}</h2>
+        <p>{search || category !== "all" ? "Try a broader search or reset the filters." : "Successful admin mutations will appear here."}</p>
+      </div>
+    ) : null}
+  </section>
+
+  {result && result.pageCount > 1 && (
+    <nav class="admin-pagination" aria-label="Activity pages">
+      {result.page > 1 ? <a href={pageHref(result.page - 1)}>Previous</a> : <span aria-disabled="true">Previous</span>}
+      <strong>{result.page} / {result.pageCount}</strong>
+      {result.page < result.pageCount ? <a href={pageHref(result.page + 1)}>Next</a> : <span aria-disabled="true">Next</span>}
+    </nav>
+  )}
+</AdminLayout>

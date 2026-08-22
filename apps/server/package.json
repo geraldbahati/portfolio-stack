@@ -16,16 +16,19 @@
     "@portfolio-stack/auth": "workspace:*",
     "@portfolio-stack/db": "workspace:*",
     "@portfolio-stack/env": "workspace:*",
+    "@portfolio-stack/media": "workspace:*",
     "@sentry/cloudflare": "^10.38.0",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "hono": "catalog:",
+    "resend": "^6.21.0",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@portfolio-stack/config": "workspace:*",
     "@types/node": "catalog:",
+    "standardwebhooks": "^1.0.0",
     "tsdown": "^0.22.14",
     "typescript": "catalog:"
   }

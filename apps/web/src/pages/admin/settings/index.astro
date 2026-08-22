@@ -1,0 +1,136 @@
+---
+import { SOCIAL_SETTING_FIELDS } from "@portfolio-stack/api/site-settings";
+
+import AdminHeader from "../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../components/admin/AdminNotice.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin%2Fsettings", 302);
+
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+const notices: Record<string, string> = {
+  saved: "Public profile settings saved. Cached pages will refresh shortly.",
+  "no-changes": "No settings changed.",
+};
+const errors: Record<string, string> = {
+  "invalid-settings": "Review the highlighted requirements and use the expected HTTPS social URLs.",
+};
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+type SettingsResult = Awaited<ReturnType<typeof api.admin.settings.get>>;
+let result: SettingsResult | null = null;
+try {
+  result = await api.admin.settings.get();
+} catch {
+  // The page stays protected and reports the unavailable data boundary below.
+}
+
+const dateFormatter = new Intl.DateTimeFormat("en-KE", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Africa/Nairobi",
+});
+---
+
+<AdminLayout
+  title="Settings"
+  description="Manage the public professional profile shown across the portfolio."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="Public profile"
+    title="Settings"
+    description="Update the shared professional details and social profiles used by the site navigation and footer."
+  >
+    <a slot="actions" href="/" target="_blank" rel="noopener noreferrer" class="admin-button admin-button--secondary">View live portfolio</a>
+  </AdminHeader>
+
+  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+  {!result && <AdminNotice kind="error" message="Settings data is temporarily unavailable. No values can be changed until it reconnects." />}
+
+  {result && (
+    <>
+      <section class="admin-settings-status" aria-label="Settings publication status">
+        <div class="admin-settings-status__item">
+          <span>Source</span>
+          <strong>{result.persisted ? "Database record" : "Checked-in defaults"}</strong>
+        </div>
+        <div class="admin-settings-status__item">
+          <span>Last saved</span>
+          <strong>{result.updatedAt ? dateFormatter.format(new Date(result.updatedAt)) : "Not saved yet"}</strong>
+        </div>
+        <div class="admin-settings-status__item">
+          <span>Delivery</span>
+          <strong>Edge-cached HTML</strong>
+        </div>
+      </section>
+
+      <form method="post" action="/admin/settings/update" class="admin-settings-form">
+        <section class="admin-form-section">
+          <header class="admin-form-section__header">
+            <span>01</span>
+            <div>
+              <h2>Professional presence</h2>
+              <p>These concise labels appear in the public footer. Plain text only.</p>
+            </div>
+          </header>
+          <div class="admin-form-grid">
+            <label class="admin-field">
+              <span>Professional title <em>Required</em></span>
+              <input name="professionalTitle" value={result.values.professionalTitle} minlength="2" maxlength="80" required />
+            </label>
+            <label class="admin-field">
+              <span>Location <em>Required</em></span>
+              <input name="location" value={result.values.location} minlength="2" maxlength="100" required />
+            </label>
+            <label class="admin-field">
+              <span>Business hours <em>Required</em></span>
+              <input name="businessHours" value={result.values.businessHours} minlength="2" maxlength="100" required />
+            </label>
+            <label class="admin-field">
+              <span>Availability note <em>Required</em></span>
+              <input name="availability" value={result.values.availability} minlength="2" maxlength="120" required />
+            </label>
+          </div>
+        </section>
+
+        <section class="admin-form-section">
+          <header class="admin-form-section__header">
+            <span>02</span>
+            <div>
+              <h2>Social profiles</h2>
+              <p>Leave a field empty to hide that network. URLs must use HTTPS and the matching official host.</p>
+            </div>
+          </header>
+          <div class="admin-form-grid">
+            {SOCIAL_SETTING_FIELDS.map((social) => (
+              <label class="admin-field" data-setting-field={social.key}>
+                <span>{social.label}</span>
+                <input
+                  name={social.key}
+                  value={result.values[social.key] ?? ""}
+                  type="url"
+                  inputmode="url"
+                  maxlength="2048"
+                  placeholder={`https://${social.label.toLowerCase()}.com/…`}
+                />
+              </label>
+            ))}
+          </div>
+        </section>
+
+        <aside class="admin-settings-boundary">
+          <div class="admin-settings-boundary__copy">
+            <strong>Intentionally code-managed</strong>
+            <p>Legal identity, privacy text, canonical domains, analytics IDs, authentication, and deployment secrets stay outside this form so they retain review and deployment controls.</p>
+          </div>
+          <button type="submit" class="admin-button admin-button--primary">Save settings</button>
+        </aside>
+      </form>
+    </>
+  )}
+</AdminLayout>

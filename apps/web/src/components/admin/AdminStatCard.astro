@@ -1,0 +1,16 @@
+---
+interface Props {
+  label: string;
+  value: string | number;
+  detail: string;
+  tone?: "default" | "positive" | "attention";
+}
+
+const { label, value, detail, tone = "default" } = Astro.props;
+---
+
+<article class:list={["admin-stat-card", `admin-stat-card--${tone}`]}>
+  <p>{label}</p>
+  <strong>{value}</strong>
+  <span>{detail}</span>
+</article>

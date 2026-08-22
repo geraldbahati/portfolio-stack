@@ -1,0 +1,71 @@
+---
+import { PUBLIC_IMAGE_TRANSFORM_ZONE } from "astro:env/client";
+import type { PublishedCaseStudy } from "@portfolio-stack/api/routers/projects";
+
+import Picture from "../../components/Picture.astro";
+import { IMAGE_PRESETS } from "../../lib/images/image-presets";
+import { r2OptimizedImage } from "../../lib/images/remote-image";
+
+interface Props {
+  gallery: PublishedCaseStudy["gallery"];
+}
+
+const { gallery } = Astro.props;
+const feature = gallery.find((item) => item.galleryType === "feature");
+const stack = gallery.filter((item) => item.galleryType === "stack");
+const zone = PUBLIC_IMAGE_TRANSFORM_ZONE;
+
+function picture(item: PublishedCaseStudy["gallery"][number]) {
+  return r2OptimizedImage(
+    item.src,
+    IMAGE_PRESETS.projectGallery,
+    { width: item.width, height: item.height },
+    zone,
+    { fit: "scale-down" },
+  );
+}
+
+const featureImage = feature ? picture(feature) : null;
+---
+
+{
+  gallery.length > 0 && (
+    <section class="project-deferred-section relative bg-gray-50 py-24">
+      <div class="container mx-auto max-w-6xl overflow-hidden px-4 md:px-6">
+        <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 lg:gap-12">
+          {feature && featureImage && (
+            <div class="relative w-full overflow-hidden rounded-sm border border-black/10 shadow-sm lg:col-span-6" data-reveal="up">
+              <Picture
+                src={featureImage}
+                alt={feature.alt || "Project feature image"}
+                imgClass="h-auto w-full object-cover"
+                fetchpriority="low"
+              />
+            </div>
+          )}
+          {stack.length > 0 && (
+            <div class="space-y-8 lg:col-span-6 lg:space-y-12">
+              {stack.map((item, index) => {
+                const src = picture(item);
+                return src ? (
+                  <div
+                    class="group relative w-full overflow-hidden rounded-sm shadow-sm"
+                    data-reveal="up"
+                    style={`--d: ${index * 100}ms`}
+                  >
+                    <Picture
+                      src={src}
+                      alt={item.alt || "Project mockup"}
+                      imgClass="h-auto w-full object-cover transition-transform duration-700 group-hover:scale-[1.01]"
+                      fetchpriority="low"
+                    />
+                  </div>
+                ) : null;
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}

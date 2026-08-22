@@ -1,18 +1,40 @@
 {
+  "id": "/",
   "name": "Gerald Bahati — Software Engineer",
   "short_name": "Gerald Bahati",
-  "description": "Portfolio and production engineering case studies by Gerald Bahati.",
+  "description": "Portfolio and production engineering case studies by Gerald Bahati — edge-first e-commerce, M-Pesa payments, and real-time systems.",
   "start_url": "/",
   "scope": "/",
   "display": "browser",
   "background_color": "#f5f4ef",
   "theme_color": "#000000",
+  "lang": "en-KE",
+  "dir": "ltr",
+  "categories": ["business", "portfolio", "productivity"],
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

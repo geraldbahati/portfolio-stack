@@ -1,0 +1,175 @@
+---
+import { PUBLIC_IMAGE_TRANSFORM_ZONE, PUBLIC_STREAM_CUSTOMER } from "astro:env/client";
+import type { PublishedProject } from "@portfolio-stack/api/routers/projects";
+
+import { IMAGE_PRESETS } from "../../lib/images/image-presets";
+import { posterDimensions, projectMediaAssets } from "../../lib/project-media/poster";
+import "./project-card.css";
+
+interface Props {
+  project: PublishedProject;
+  sizes?: string;
+  aspectRatio?: string;
+  priority?: boolean;
+  showBadges?: boolean;
+  showTitle?: boolean;
+  showLiveLink?: boolean;
+  playback?: boolean;
+  interactiveCursor?: boolean;
+  class?: string;
+}
+
+const {
+  project,
+  sizes = IMAGE_PRESETS.projectCard.sizes,
+  aspectRatio,
+  priority = false,
+  showBadges = true,
+  showTitle = true,
+  showLiveLink = true,
+  playback = true,
+  interactiveCursor = true,
+  class: className = "",
+} = Astro.props;
+
+const ratio = aspectRatio ?? project.aspectRatio ?? "16 / 9";
+const { width, height } = posterDimensions(ratio);
+const media = projectMediaAssets(
+  project,
+  {
+    streamCustomer: PUBLIC_STREAM_CUSTOMER,
+    transformZone: PUBLIC_IMAGE_TRANSFORM_ZONE,
+  },
+  { sizes },
+);
+const posterAlt = project.alt || project.title || `Project ${project.id}`;
+const badges = showBadges ? (project.badges ?? []) : [];
+---
+
+<article
+  data-project-card
+  data-project-id={project.id}
+  data-project-title={project.title}
+  data-media-type={playback ? project.type : undefined}
+  data-media-src={playback && project.type === "video" ? media.hlsSrc : undefined}
+  data-playback={playback ? "on" : "off"}
+  class:list={["project-card relative overflow-hidden rounded-lg bg-gray-900", className]}
+  style={`aspect-ratio: ${ratio}`}
+  aria-label={project.title || `Project ${project.id}`}
+>
+  <a
+    href={`/projects/${project.id}`}
+    data-astro-prefetch="hover"
+    data-project-hit
+    class="absolute inset-0 z-10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    aria-label={project.title || `View project ${project.id}`}
+  >
+    <span class="sr-only">{project.title || `View project ${project.id}`}</span>
+  </a>
+
+  {
+    interactiveCursor && (
+      <div class="project-card__cursor" aria-hidden="true">
+        View
+        <svg class="ml-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+      </div>
+    )
+  }
+
+  <div class="project-card__media absolute inset-0">
+    {
+      media.posterSrc && (
+        <picture data-project-poster class="project-card__poster">
+          {media.sources.map((source) => (
+            <source type={source.type} srcset={source.srcset} sizes={media.sizes} />
+          ))}
+          <img
+            src={media.posterSrc}
+            srcset={media.srcset || undefined}
+            sizes={media.sizes}
+            alt={project.type === "gif" ? posterAlt : ""}
+            width={width}
+            height={height}
+            loading={priority ? "eager" : "lazy"}
+            fetchpriority={priority ? "high" : undefined}
+            decoding="async"
+            data-image-component={import.meta.env.DEV ? "true" : undefined}
+          />
+        </picture>
+      )
+    }
+    {
+      playback && project.type === "video" && (
+        <video
+          class="project-card__video"
+          poster={media.nativePoster ?? undefined}
+          muted
+          loop
+          playsinline
+          preload="none"
+          crossorigin="anonymous"
+          aria-hidden="true"
+        >
+        </video>
+      )
+    }
+    <div class="project-card__fallback">
+      <span>Media unavailable</span>
+    </div>
+  </div>
+
+  <div
+    class="project-card__shade pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"
+  >
+  </div>
+
+  {
+    showTitle && project.title && (
+      <div class="project-card__title pointer-events-none absolute top-4 left-4 z-10">
+        <p class="rounded-lg bg-black/70 px-3 py-1.5 text-lg font-semibold text-white">{project.title}</p>
+      </div>
+    )
+  }
+
+  {
+    showLiveLink && project.url && (
+      <div class="project-card__live absolute top-4 right-4 z-20">
+        <a
+          href={project.url}
+          data-live-link
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1.5 rounded-full bg-primary/90 px-3.5 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary"
+        >
+          <span class="relative flex h-2 w-2">
+            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+            <span class="relative inline-flex h-2 w-2 rounded-full bg-white"></span>
+          </span>
+          Live
+          <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 3h6v6"></path>
+            <path d="M10 14 21 3"></path>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+          </svg>
+        </a>
+      </div>
+    )
+  }
+
+  {
+    badges.map((badge, index) => (
+      <div
+        class:list={[
+          "project-card__badge pointer-events-none absolute z-10",
+          badge.position === "bottom-right" ? "right-4 bottom-4" : "bottom-4 left-4",
+        ]}
+        style={`--i: ${index}`}
+      >
+        <span class="inline-block rounded-full bg-black/70 px-3 py-1.5 text-xs text-white">{badge.text}</span>
+      </div>
+    ))
+  }
+</article>

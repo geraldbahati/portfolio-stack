@@ -1,0 +1,226 @@
+---
+import { projectPublishIssues } from "@portfolio-stack/api/schemas/admin/project";
+
+interface EditorValue {
+  id: string;
+  title: string;
+  description: string | null;
+  src: string;
+  type: "video" | "gif";
+  poster: string | null;
+  alt: string | null;
+  url: string | null;
+  badges: Array<{ text: string }> | null;
+  aspectRatio: string | null;
+  sortOrder: number;
+  isPublished: boolean;
+  details: {
+    tagline: string | null;
+    fullDescription: string | null;
+    services: string[] | null;
+    client: string | null;
+    industry: string | null;
+    period: string | null;
+    year: number | null;
+    features: string[] | null;
+  } | null;
+}
+
+interface Props {
+  mode: "create" | "edit";
+  value: EditorValue;
+}
+
+const { mode, value } = Astro.props;
+const isEdit = mode === "edit";
+const action = isEdit
+  ? `/admin/projects/${encodeURIComponent(value.id)}/update`
+  : "/admin/projects/create";
+const publishIssues = projectPublishIssues({ project: value, details: value.details });
+---
+
+<form method="post" action={action} class="admin-editor-form">
+  <section class="admin-form-section" aria-labelledby="project-basics-heading">
+    <header class="admin-form-section__header">
+      <span>01</span>
+      <div>
+        <h2 id="project-basics-heading">Project basics</h2>
+        <p>The title, stable URL slug, summary, and public destination.</p>
+      </div>
+    </header>
+    <div class="admin-form-grid">
+      <label class="admin-field admin-field--wide">
+        <span>Project title <em>Required</em></span>
+        <input name="title" value={value.title} minlength="2" maxlength="120" required autocomplete="off" />
+      </label>
+      <label class="admin-field">
+        <span>URL slug <em>Required</em></span>
+        <input
+          name="id"
+          value={value.id}
+          pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+          minlength="2"
+          maxlength="80"
+          required
+          readonly={isEdit}
+          aria-describedby="slug-help"
+          autocomplete="off"
+        />
+        <small id="slug-help">Lowercase letters, numbers, and hyphens. The slug is permanent after creation.</small>
+      </label>
+      <label class="admin-field">
+        <span>Live project URL</span>
+        <input name="url" value={value.url ?? ""} type="url" maxlength="2048" placeholder="https://example.com" />
+      </label>
+      <label class="admin-field admin-field--wide">
+        <span>Project summary</span>
+        <textarea name="description" rows="4" maxlength="1000">{value.description ?? ""}</textarea>
+        <small>Used on project cards, metadata, and the case-study introduction.</small>
+      </label>
+    </div>
+  </section>
+
+  <section class="admin-form-section" aria-labelledby="project-media-heading">
+    <header class="admin-form-section__header">
+      <span>02</span>
+      <div>
+        <h2 id="project-media-heading">Primary media</h2>
+        <p>Cloudflare Stream, R2, or another approved media source.</p>
+      </div>
+    </header>
+    <div class="admin-form-grid">
+      <label class="admin-field">
+        <span>Media type <em>Required</em></span>
+        <select name="type" required>
+          <option value="video" selected={value.type === "video"}>Video</option>
+          <option value="gif" selected={value.type === "gif"}>Image / GIF</option>
+        </select>
+      </label>
+      <label class="admin-field">
+        <span>Aspect ratio</span>
+        <input name="aspectRatio" value={value.aspectRatio ?? "16/9"} pattern="\d+(?:\.\d+)?\s*\/\s*\d+(?:\.\d+)?" maxlength="20" />
+      </label>
+      <label class="admin-field admin-field--wide">
+        <span>Media source URL <em>Required</em></span>
+        <input name="src" value={value.src} type="url" maxlength="2048" required inputmode="url" />
+      </label>
+      <label class="admin-field admin-field--wide">
+        <span>Poster URL</span>
+        <input name="poster" value={value.poster ?? ""} type="url" maxlength="2048" inputmode="url" />
+      </label>
+      <label class="admin-field admin-field--wide">
+        <span>Accessible description</span>
+        <input name="alt" value={value.alt ?? ""} maxlength="240" />
+        <small>Describe what the project media shows, not the file itself.</small>
+      </label>
+    </div>
+  </section>
+
+  <section class="admin-form-section" aria-labelledby="case-study-heading">
+    <header class="admin-form-section__header">
+      <span>03</span>
+      <div>
+        <h2 id="case-study-heading">Case study</h2>
+        <p>The narrative and context shown on the project detail page.</p>
+      </div>
+    </header>
+    <div class="admin-form-grid">
+      <label class="admin-field admin-field--wide">
+        <span>Tagline</span>
+        <input name="tagline" value={value.details?.tagline ?? ""} maxlength="180" />
+      </label>
+      <label class="admin-field admin-field--wide">
+        <span>Full description</span>
+        <textarea name="fullDescription" rows="10" maxlength="20000">{value.details?.fullDescription ?? ""}</textarea>
+        <small>Markdown is supported by the public case-study renderer.</small>
+      </label>
+      <label class="admin-field">
+        <span>Client</span>
+        <input name="client" value={value.details?.client ?? ""} maxlength="120" />
+      </label>
+      <label class="admin-field">
+        <span>Industry</span>
+        <input name="industry" value={value.details?.industry ?? ""} maxlength="120" />
+      </label>
+      <label class="admin-field">
+        <span>Period</span>
+        <input name="period" value={value.details?.period ?? ""} maxlength="80" placeholder="Jan–Apr 2026" />
+      </label>
+      <label class="admin-field">
+        <span>Year</span>
+        <input name="year" value={value.details?.year ?? ""} type="number" min="1990" max="2200" inputmode="numeric" />
+      </label>
+      <label class="admin-field">
+        <span>Services</span>
+        <textarea name="services" rows="5" placeholder="One service per line">{value.details?.services?.join("\n") ?? ""}</textarea>
+      </label>
+      <label class="admin-field">
+        <span>Features</span>
+        <textarea name="features" rows="5" placeholder="One feature per line">{value.details?.features?.join("\n") ?? ""}</textarea>
+      </label>
+    </div>
+  </section>
+
+  <section class="admin-form-section" aria-labelledby="project-display-heading">
+    <header class="admin-form-section__header">
+      <span>04</span>
+      <div>
+        <h2 id="project-display-heading">Display settings</h2>
+        <p>Ordering and compact labels used across project cards.</p>
+      </div>
+    </header>
+    <div class="admin-form-grid">
+      <label class="admin-field">
+        <span>Sort order <em>Required</em></span>
+        <input name="sortOrder" value={value.sortOrder} type="number" min="0" max="10000" required inputmode="numeric" />
+      </label>
+      <label class="admin-field">
+        <span>Badges</span>
+        <input name="badges" value={value.badges?.map((badge) => badge.text).join(", ") ?? ""} maxlength="240" />
+        <small>Comma-separated, up to six labels.</small>
+      </label>
+    </div>
+  </section>
+
+  <div class="admin-editor-actions">
+    <a href="/admin/projects" class="admin-button admin-button--secondary">Cancel</a>
+    <button type="submit" class="admin-button admin-button--primary">
+      {isEdit ? "Save project" : "Create draft"}
+    </button>
+  </div>
+</form>
+
+{
+  isEdit && (
+    <section class="admin-publication" aria-labelledby="publication-heading">
+      <div>
+        <p class="admin-eyebrow">Publication control</p>
+        <h2 id="publication-heading">{value.isPublished ? "This project is live" : "This project is a draft"}</h2>
+        {value.isPublished ? (
+          <p>Unpublishing removes the project from public listings and direct public access.</p>
+        ) : publishIssues.length > 0 ? (
+          <>
+            <p>Complete these requirements before publishing:</p>
+            <ul>{publishIssues.map((issue) => <li>{issue}</li>)}</ul>
+          </>
+        ) : (
+          <p>All required public content is present. Confirm the slug below to publish.</p>
+        )}
+      </div>
+      <form method="post" action={`/admin/projects/${encodeURIComponent(value.id)}/publication`} class="admin-publication__form">
+        <input type="hidden" name="publish" value={value.isPublished ? "false" : "true"} />
+        <label class="admin-field">
+          <span>Type <strong>{value.id}</strong> to confirm</span>
+          <input name="confirmation" required autocomplete="off" />
+        </label>
+        <button
+          type="submit"
+          class:list={["admin-button", value.isPublished ? "admin-button--danger" : "admin-button--primary"]}
+          disabled={!value.isPublished && publishIssues.length > 0}
+        >
+          {value.isPublished ? "Unpublish project" : "Publish project"}
+        </button>
+      </form>
+    </section>
+  )
+}

@@ -1,0 +1,51 @@
+---
+import AdminHeader from "../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../components/admin/AdminNotice.astro";
+import AdminProjectForm from "../../../components/admin/AdminProjectForm.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin%2Fprojects%2Fnew", 302);
+
+const error = Astro.url.searchParams.get("error");
+const errors: Record<string, string> = {
+  duplicate: "That project slug is already in use. Choose a different slug.",
+  invalid: "Review the project fields and approved media URLs, then try again.",
+  "save-failed": "The project could not be created. Please try again.",
+};
+
+const value = {
+  id: "",
+  title: "",
+  description: null,
+  src: "",
+  type: "video" as const,
+  poster: null,
+  alt: null,
+  url: null,
+  badges: [],
+  aspectRatio: "16/9",
+  sortOrder: 0,
+  isPublished: false,
+  details: {
+    tagline: null,
+    fullDescription: null,
+    services: [],
+    client: null,
+    industry: null,
+    period: null,
+    year: null,
+    features: [],
+  },
+};
+---
+
+<AdminLayout title="New project" description="Create a new portfolio project draft." user={admin}>
+  <AdminHeader
+    eyebrow="Projects / New"
+    title="Create a project"
+    description="Start with the core project and case-study content. New projects always begin as private drafts."
+  />
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+  <AdminProjectForm mode="create" value={value} />
+</AdminLayout>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { IMAGE_PRESETS } from "../image-presets";
+import { IMAGE_PRESETS } from "../images/image-presets";
 import { posterDimensions, projectMediaAssets, projectPosterPreload } from "./poster";
 
 const STREAM = "customer-pdxnd9di8ybc2kur.cloudflarestream.com";

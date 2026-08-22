@@ -9,7 +9,7 @@ import {
   getTransformedImageUrl,
 } from "@portfolio-stack/media";
 
-import { IMAGE_PRESETS } from "../image-presets";
+import { IMAGE_PRESETS } from "../images/image-presets";
 
 export const PROJECT_CARD_WIDTHS = IMAGE_PRESETS.projectCard.widths;
 export const PROJECT_CARD_SIZES = IMAGE_PRESETS.projectCard.sizes;

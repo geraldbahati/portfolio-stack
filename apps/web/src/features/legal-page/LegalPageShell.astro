@@ -1,0 +1,22 @@
+---
+import "./legal-page.css";
+
+interface Props {
+  title: string;
+  class?: string;
+}
+
+const { title, class: className } = Astro.props;
+---
+
+<div class:list={["simple-legal-page", className]}>
+  <div class="simple-legal-container">
+    <header class="simple-legal-header">
+      <h1>{title}</h1>
+      <div class="simple-legal-title-rule" aria-hidden="true"></div>
+      <slot name="meta" />
+    </header>
+
+    <slot />
+  </div>
+</div>

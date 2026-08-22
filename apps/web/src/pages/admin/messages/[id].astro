@@ -1,0 +1,134 @@
+---
+import AdminHeader from "../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../components/admin/AdminNotice.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+const messageId = Astro.params.id;
+if (!admin) return Astro.redirect(`/login?returnTo=${encodeURIComponent(Astro.url.pathname)}`, 302);
+if (!messageId) return Astro.redirect("/admin/messages?error=not-found", 302);
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+type Message = Awaited<ReturnType<typeof api.admin.messages.get>>;
+let message: Message | null = null;
+let dataUnavailable = false;
+
+try {
+  message = await api.admin.messages.get({ id: messageId });
+} catch {
+  dataUnavailable = true;
+  Astro.response.status = 503;
+}
+if (!dataUnavailable && !message) Astro.response.status = 404;
+
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+const notices: Record<string, string> = {
+  read: "Message marked as read.",
+  unread: "Message marked as unread.",
+  archived: "Message archived. It remains available until you permanently delete it.",
+  restored: "Message restored to the inbox.",
+};
+const errors: Record<string, string> = {
+  "invalid-confirmation": "The confirmation did not match the message ID.",
+  "action-failed": "The message could not be updated. Please try again.",
+};
+
+const dateTimeFormatter = new Intl.DateTimeFormat("en-KE", {
+  dateStyle: "long",
+  timeStyle: "short",
+});
+const actionPath = `/admin/messages/${encodeURIComponent(messageId)}/action`;
+const mailSubject = encodeURIComponent(
+  `Re: Portfolio enquiry from ${message?.name ?? "website visitor"}`,
+);
+---
+
+<AdminLayout
+  title={message ? `Message from ${message.name}` : "Message"}
+  description="Review a private portfolio contact submission."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="Contact submission"
+    title={message ? message.name : "Message unavailable"}
+    description={message ? `Received ${dateTimeFormatter.format(new Date(message.createdAt))}` : "This contact submission could not be loaded."}
+  >
+    <a slot="actions" href="/admin/messages" class="admin-button admin-button--secondary">Back to inbox</a>
+  </AdminHeader>
+
+  {Astro.response.status === 404 && <AdminNotice kind="error" message="That message does not exist or has already been deleted." />}
+  {dataUnavailable && <AdminNotice kind="error" message="Message data is temporarily unavailable." />}
+  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+
+  {
+    message && (
+      <div class="admin-message-detail-grid">
+        <article class="admin-message-detail" aria-labelledby="message-body-heading">
+          <header class="admin-message-detail__header">
+            <div>
+              <p>From</p>
+              <h2 id="message-body-heading">{message.name}</h2>
+              <a href={`mailto:${message.email}?subject=${mailSubject}`}>{message.email}</a>
+            </div>
+            <div class="admin-message-detail__states">
+              <span class:list={["admin-status", `admin-status--${message.status}`]}>{message.status}</span>
+              <span class="admin-status">{message.readAt ? "Read" : "Unread"}</span>
+              {message.archivedAt && <span class="admin-status">Archived</span>}
+            </div>
+          </header>
+          <div class="admin-message-detail__body">{message.message}</div>
+          <footer class="admin-message-detail__footer">
+            <span>Submission ID</span>
+            <code>{message.id}</code>
+          </footer>
+        </article>
+
+        <aside class="admin-message-actions" aria-labelledby="message-actions-heading">
+          <section>
+            <h2 id="message-actions-heading">Message actions</h2>
+            <p>These changes use regular server forms and work without client-side JavaScript.</p>
+            <div class="admin-message-actions__buttons">
+              <a href={`mailto:${message.email}?subject=${mailSubject}`} class="admin-button admin-button--primary">Reply by email</a>
+              <form method="post" action={actionPath}>
+                <input type="hidden" name="action" value={message.readAt ? "mark-unread" : "mark-read"} />
+                <button type="submit" class="admin-button admin-button--secondary">Mark as {message.readAt ? "unread" : "read"}</button>
+              </form>
+              <form method="post" action={actionPath}>
+                <input type="hidden" name="action" value={message.archivedAt ? "restore" : "archive"} />
+                <button type="submit" class="admin-button admin-button--secondary">{message.archivedAt ? "Restore to inbox" : "Archive message"}</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="admin-message-metadata">
+            <h2>Delivery record</h2>
+            <dl>
+              <div><dt>Status</dt><dd>{message.status}</dd></div>
+              <div><dt>Received</dt><dd>{dateTimeFormatter.format(new Date(message.createdAt))}</dd></div>
+              <div><dt>Read</dt><dd>{message.readAt ? dateTimeFormatter.format(new Date(message.readAt)) : "Not yet"}</dd></div>
+              <div><dt>Archived</dt><dd>{message.archivedAt ? dateTimeFormatter.format(new Date(message.archivedAt)) : "No"}</dd></div>
+              <div><dt>Email provider ID</dt><dd>{message.emailId || "Not available"}</dd></div>
+            </dl>
+          </section>
+
+          <section class="admin-message-delete">
+            <h2>Permanent deletion</h2>
+            <p>Delete this submission when it is no longer needed. This cannot be undone.</p>
+            <form method="post" action={actionPath}>
+              <input type="hidden" name="action" value="delete" />
+              <label class="admin-field">
+                <span>Type the exact submission ID to confirm</span>
+                <input name="confirmation" autocomplete="off" required aria-describedby="delete-confirmation-hint" />
+                <small id="delete-confirmation-hint"><code>{message.id}</code></small>
+              </label>
+              <button type="submit" class="admin-button admin-button--danger">Permanently delete</button>
+            </form>
+          </section>
+        </aside>
+      </div>
+    )
+  }
+</AdminLayout>

@@ -2,15 +2,15 @@ import { getPublishedProjectBySlug, listPublishedProjects } from "@portfolio-sta
 import { z } from "zod";
 
 import { publicProcedure } from "../index";
-import { toPublishedCaseStudy, toPublishedProject } from "./published-project";
+import { toPublishedCaseStudy, toPublishedProject } from "../schemas/published-project";
 
-export type { PublishedCaseStudy, PublishedProject } from "./published-project";
+export type { PublishedCaseStudy, PublishedProject } from "../schemas/published-project";
 export {
   publishedCaseStudySchema,
   publishedProjectSchema,
   toPublishedCaseStudy,
   toPublishedProject,
-} from "./published-project";
+} from "../schemas/published-project";
 
 export const projectsRouter = {
   listPublished: publicProcedure.handler(async () => {

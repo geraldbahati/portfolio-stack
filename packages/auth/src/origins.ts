@@ -23,7 +23,9 @@ export function cookieAttributes(environment: string, authUrl: string) {
   const local = environment === "development" || isLocalHttpUrl(authUrl);
 
   return {
-    sameSite: local ? ("lax" as const) : ("none" as const),
+    // The production web and API Workers share a parent domain, so Lax
+    // supports the admin flow without weakening same-site CSRF protection.
+    sameSite: "lax" as const,
     secure: !local,
     httpOnly: true,
   };
@@ -31,7 +33,6 @@ export function cookieAttributes(environment: string, authUrl: string) {
 
 export const DEFAULT_STREAM_ORIGINS = [
   "geraldbahati.dev",
-  "www.geraldbahati.dev",
   "localhost:4321",
   "localhost:3000",
 ] as const;

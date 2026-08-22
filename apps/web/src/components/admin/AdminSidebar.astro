@@ -1,0 +1,44 @@
+---
+import type { AdminSessionUser } from "../../lib/admin/session";
+import AdminIcon from "./AdminIcon.astro";
+import AdminNavigation from "./AdminNavigation.astro";
+
+interface Props {
+  currentPath: string;
+  user: AdminSessionUser;
+}
+
+const { currentPath, user } = Astro.props;
+const initials = user.name
+  .split(/\s+/)
+  .slice(0, 2)
+  .map((part) => part[0])
+  .join("")
+  .toUpperCase();
+---
+
+<aside class="admin-sidebar">
+  <a href="/admin" class="admin-brand" aria-label="Gerald Bahati admin overview">
+    <span class="admin-brand__mark" aria-hidden="true">GB</span>
+    <span>
+      <strong>Portfolio</strong>
+      <small>Admin workspace</small>
+    </span>
+  </a>
+
+  <AdminNavigation currentPath={currentPath} />
+
+  <div class="admin-sidebar__footer">
+    <a href="/" class="admin-view-site">
+      <span>View live portfolio</span>
+      <AdminIcon name="external" size={17} />
+    </a>
+    <div class="admin-profile">
+      <span class="admin-profile__avatar" aria-hidden="true">{initials}</span>
+      <span class="admin-profile__copy">
+        <strong>{user.name}</strong>
+        <small>{user.email}</small>
+      </span>
+    </div>
+  </div>
+</aside>

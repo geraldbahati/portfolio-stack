@@ -1,0 +1,153 @@
+---
+import AdminHeader from "../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../components/admin/AdminNotice.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin%2Fprojects", 302);
+
+const search = Astro.url.searchParams.get("q")?.trim().slice(0, 100) ?? "";
+const rawStatus = Astro.url.searchParams.get("status");
+const status = rawStatus === "published" || rawStatus === "draft" ? rawStatus : "all";
+const rawPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+type ProjectList = Awaited<ReturnType<typeof api.admin.projects.list>>;
+let result: ProjectList | null = null;
+let dataUnavailable = false;
+
+try {
+  result = await api.admin.projects.list({ search, status, page, pageSize: 20 });
+} catch {
+  dataUnavailable = true;
+}
+
+const notices: Record<string, string> = {
+  created: "Project draft created successfully.",
+  saved: "Project changes saved.",
+  published: "Project published successfully.",
+  unpublished: "Project unpublished successfully.",
+};
+const errors: Record<string, string> = {
+  "not-found": "That project could not be found.",
+  "save-failed": "The project could not be saved. Please try again.",
+};
+
+const dateFormatter = new Intl.DateTimeFormat("en-KE", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+
+function pageHref(targetPage: number) {
+  const params = new URLSearchParams();
+  if (search) params.set("q", search);
+  if (status !== "all") params.set("status", status);
+  if (targetPage > 1) params.set("page", String(targetPage));
+  const query = params.toString();
+  return `/admin/projects${query ? `?${query}` : ""}`;
+}
+---
+
+<AdminLayout
+  title="Projects"
+  description="Create, edit, review, and publish portfolio case studies."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="Content management"
+    title="Projects"
+    description="Manage case studies from draft to publication. Public visibility changes only through an explicit confirmation step."
+  >
+    <a slot="actions" href="/admin/projects/new" class="admin-button admin-button--primary">New project</a>
+  </AdminHeader>
+
+  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+  {dataUnavailable && <AdminNotice kind="error" message="Project data is temporarily unavailable." />}
+
+  <form method="get" action="/admin/projects" class="admin-project-filters" role="search">
+    <label class="admin-search-field">
+      <span class="sr-only">Search projects</span>
+      <input name="q" value={search} type="search" maxlength="100" placeholder="Search title or slug" />
+    </label>
+    <label class="admin-filter-field">
+      <span class="sr-only">Publication status</span>
+      <select name="status">
+        <option value="all" selected={status === "all"}>All statuses</option>
+        <option value="published" selected={status === "published"}>Published</option>
+        <option value="draft" selected={status === "draft"}>Drafts</option>
+      </select>
+    </label>
+    <button type="submit" class="admin-button admin-button--secondary">Apply filters</button>
+    {(search || status !== "all") && <a href="/admin/projects" class="admin-filter-reset">Reset</a>}
+  </form>
+
+  <section class="admin-project-table" aria-labelledby="project-list-heading">
+    <header class="admin-project-table__header">
+      <div>
+        <h2 id="project-list-heading">Project library</h2>
+        <p>{result?.total ?? 0} {result?.total === 1 ? "project" : "projects"}</p>
+      </div>
+      {result && <span>Page {result.page} of {result.pageCount}</span>}
+    </header>
+
+    {
+      result?.items.length ? (
+        <div class="admin-project-rows">
+          {result.items.map((project) => (
+            <article class="admin-project-row">
+              <div class="admin-project-row__index" aria-hidden="true">
+                {String(project.sortOrder + 1).padStart(2, "0")}
+              </div>
+              <div class="admin-project-row__main">
+                <div class="admin-project-row__title">
+                  <h3>{project.title}</h3>
+                  <span class:list={["admin-status", project.isPublished && "admin-status--published"]}>
+                    {project.isPublished ? "Published" : "Draft"}
+                  </span>
+                </div>
+                <p>{project.description || "No project summary yet."}</p>
+                <div class="admin-project-row__meta">
+                  <span>/{project.id}</span>
+                  <span>{project.type}</span>
+                  <span>Updated {dateFormatter.format(new Date(project.updatedAt))}</span>
+                </div>
+              </div>
+              <div class="admin-project-row__actions">
+                {project.isPublished && <a href={`/projects/${project.id}`} target="_blank" rel="noopener noreferrer">View live</a>}
+                <a href={`/admin/projects/${project.id}/content`}>Content</a>
+                <a href={`/admin/projects/${project.id}/edit`} class="admin-button admin-button--secondary">Edit</a>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : result ? (
+        <div class="admin-project-empty">
+          <span aria-hidden="true">00</span>
+          <h2>{search || status !== "all" ? "No projects match these filters" : "No projects yet"}</h2>
+          <p>{search || status !== "all" ? "Try a broader search or reset the filters." : "Create the first project draft to begin."}</p>
+          {search || status !== "all" ? (
+            <a href="/admin/projects" class="admin-button admin-button--secondary">Reset filters</a>
+          ) : (
+            <a href="/admin/projects/new" class="admin-button admin-button--primary">Create project</a>
+          )}
+        </div>
+      ) : null
+    }
+  </section>
+
+  {
+    result && result.pageCount > 1 && (
+      <nav class="admin-pagination" aria-label="Project pages">
+        {result.page > 1 ? <a href={pageHref(result.page - 1)}>Previous</a> : <span aria-disabled="true">Previous</span>}
+        <strong>{result.page} / {result.pageCount}</strong>
+        {result.page < result.pageCount ? <a href={pageHref(result.page + 1)}>Next</a> : <span aria-disabled="true">Next</span>}
+      </nav>
+    )
+  }
+</AdminLayout>

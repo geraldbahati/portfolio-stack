@@ -5,6 +5,8 @@ import { env } from "@portfolio-stack/env/server";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 
+import { verifyResendWebhook } from "./resend-webhook";
+
 const STATUS_BY_EVENT: Record<string, "sent" | "delivered" | "failed"> = {
   "email.sent": "sent",
   "email.delivered": "delivered",
@@ -40,26 +42,35 @@ export async function verifyTurnstileToken(token: string | undefined, ip?: strin
 export async function handleResendWebhook(context: Context) {
   const payload = await context.req.text();
   const secret = env.RESEND_WEBHOOK_SECRET;
+  const apiKey = env.RESEND_API_KEY;
 
-  if (secret) {
-    const signature = context.req.header("svix-signature");
-    if (!signature) {
-      throw new HTTPException(401, { message: "Invalid webhook signature" });
-    }
+  if (!secret || !apiKey) {
+    console.error("[webhook] Resend verification is not configured");
+    throw new HTTPException(503, { message: "Webhook unavailable" });
   }
 
-  let eventType = "unknown";
-  let emailId = "unknown";
+  let verified: ReturnType<typeof verifyResendWebhook>;
   try {
-    const body = JSON.parse(payload) as {
-      type?: string;
-      data?: { email_id?: string };
-    };
-    eventType = body.type ?? eventType;
-    emailId = body.data?.email_id ?? emailId;
+    verified = verifyResendWebhook({
+      apiKey,
+      payload,
+      webhookSecret: secret,
+      headers: {
+        id: context.req.header("svix-id"),
+        timestamp: context.req.header("svix-timestamp"),
+        signature: context.req.header("svix-signature"),
+      },
+    });
   } catch {
-    // Delivery reporting must not fail closed on a malformed payload.
+    throw new HTTPException(400, { message: "Invalid webhook" });
   }
+
+  const body = verified.event as {
+    type?: string;
+    data?: { email_id?: string };
+  };
+  const eventType = body.type ?? "unknown";
+  const emailId = body.data?.email_id ?? "unknown";
 
   const status = STATUS_BY_EVENT[eventType];
   let matched = false;
@@ -73,6 +84,7 @@ export async function handleResendWebhook(context: Context) {
     event: "inquiry_email_status_changed",
     distinctId: emailId,
     properties: {
+      $insert_id: verified.webhookId,
       status: eventType.replace("email.", ""),
       email_id: emailId,
       matched_submission: matched,

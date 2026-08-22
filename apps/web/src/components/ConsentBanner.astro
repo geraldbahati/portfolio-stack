@@ -28,7 +28,6 @@
 </div>
 
 <script>
-  import { applyConsent } from "@portfolio-stack/analytics/posthog-client";
   import { getConsent, setConsent } from "@portfolio-stack/analytics/consent";
 
   const banner = document.getElementById("consent-banner");
@@ -42,7 +41,6 @@
     button.addEventListener("click", () => {
       const decision = button.dataset.consent === "accepted" ? "accepted" : "rejected";
       setConsent(decision);
-      void applyConsent(decision);
       banner.hidden = true;
     });
   });

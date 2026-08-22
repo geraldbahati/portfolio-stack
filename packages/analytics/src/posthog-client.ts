@@ -61,6 +61,9 @@ export function getPostHogClient(options?: { force?: boolean }): Promise<PostHog
           api_host: host,
           ui_host: uiHost ?? "https://eu.posthog.com",
           defaults: "2026-05-30",
+          autocapture: false,
+          capture_pageview: true,
+          capture_pageleave: true,
           persistence: hasConsent ? "localStorage+cookie" : "memory",
           opt_out_capturing_by_default: !hasConsent,
           person_profiles: "identified_only",
@@ -125,6 +128,11 @@ export function schedulePostHogInitialization() {
 
 export async function applyConsent(decision: "accepted" | "rejected") {
   if (typeof window === "undefined" || !isPostHogEnabled()) {
+    return;
+  }
+
+  // Declining analytics must not download the analytics SDK just to opt out.
+  if (decision === "rejected" && !clientPromise) {
     return;
   }
 

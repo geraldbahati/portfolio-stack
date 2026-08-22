@@ -13,15 +13,53 @@ import {
   type ImageFormat,
   type ImagePresetName,
   type OptimizedImage,
-} from "./src/lib/image-presets";
+} from "./src/lib/images/image-presets";
 
 const PUBLIC_PREFIX = "/img/";
 
+interface SiteImageSource {
+  source: string;
+  preset: ImagePresetName;
+}
+
+/**
+ * Every local image the site renders is encoded here at build time.
+ *
+ * The Cloudflare adapter hardwires Astro's image service to `passthrough`
+ * (workerd cannot run sharp), so `<Image>`/`getImage()` emit `/_image?w=...`
+ * URLs that all return the untouched original. Anything routed through this
+ * plugin instead gets real AVIF/WebP variants written to `/img` under a
+ * content-hashed name, served straight from the static asset handler.
+ */
 export const SITE_IMAGE_SOURCES = {
-  bio: "src/assets/images/man-sitting.webp",
-  logo: "src/assets/images/logo.webp",
-  overlay: "src/assets/images/man-sitting.webp",
-} as const satisfies Partial<Record<ImagePresetName, string>>;
+  bio: { source: "src/assets/images/man-sitting.webp", preset: "bio" },
+  logo: { source: "src/assets/images/logo.webp", preset: "logo" },
+  overlay: { source: "src/assets/images/man-sitting.webp", preset: "overlay" },
+  hero: { source: "src/assets/images/hero-image.webp", preset: "hero" },
+  consultation: { source: "src/assets/images/consultation.webp", preset: "consultation" },
+  serviceFrontend: { source: "src/assets/images/web-design.webp", preset: "service" },
+  serviceBackend: { source: "src/assets/images/backend.webp", preset: "service" },
+  serviceInfrastructure: { source: "src/assets/images/devops-engineer.webp", preset: "service" },
+  serviceAi: { source: "src/assets/images/ai.webp", preset: "service" },
+  serviceFrontendBackdrop: {
+    source: "src/assets/images/web-design.webp",
+    preset: "serviceBackdrop",
+  },
+  serviceBackendBackdrop: { source: "src/assets/images/backend.webp", preset: "serviceBackdrop" },
+  serviceInfrastructureBackdrop: {
+    source: "src/assets/images/devops-engineer.webp",
+    preset: "serviceBackdrop",
+  },
+  serviceAiBackdrop: { source: "src/assets/images/ai.webp", preset: "serviceBackdrop" },
+} as const satisfies Record<string, SiteImageSource>;
+
+export type SiteImageName = keyof typeof SITE_IMAGE_SOURCES;
+
+const SITE_IMAGE_NAMES = Object.keys(SITE_IMAGE_SOURCES) as SiteImageName[];
+
+function avifQuality(webpQuality: number): number {
+  return Math.max(30, webpQuality - 15);
+}
 
 function cacheName(parts: string[]): string {
   return createHash("sha1").update(parts.join(":")).digest("hex").slice(0, 16);
@@ -47,8 +85,17 @@ async function encodePreset(
     avif: [],
     webp: [],
   };
+  const bytesByWidth: Record<ImageFormat, Map<number, number>> = {
+    avif: new Map(),
+    webp: new Map(),
+  };
 
   for (const format of IMAGE_FORMATS) {
+    // AVIF needs a lower quality number than WebP to land at comparable
+    // perceived quality; matching them makes AVIF the larger file on noisy
+    // photographs, which is the opposite of the point.
+    const quality = format === "avif" ? avifQuality(spec.quality) : spec.quality;
+
     for (const targetWidth of widths) {
       const key = cacheName([
         filePath,
@@ -56,26 +103,29 @@ async function encodePreset(
         preset,
         String(targetWidth),
         format,
-        String(spec.quality),
-        "v3",
+        String(quality),
+        "v4",
       ]);
       const fileName = `${stem}-${preset}-${targetWidth}.${key}.${format}`;
       const dest = join(outDir, fileName);
+      let bytes: number;
       try {
-        await stat(dest);
+        bytes = (await stat(dest)).size;
       } catch {
         const pipeline = sharp(input, { failOn: "none" })
           .rotate()
           .resize({ width: targetWidth, withoutEnlargement: true });
         const source =
           format === "avif"
-            ? await pipeline.avif({ quality: spec.quality, effort: 4 }).toBuffer()
-            : await pipeline.webp({ quality: spec.quality }).toBuffer();
+            ? await pipeline.avif({ quality, effort: 4 }).toBuffer()
+            : await pipeline.webp({ quality }).toBuffer();
         const tmp = `${dest}.${process.pid}.tmp`;
         await writeFile(tmp, source);
         await rename(tmp, dest);
+        bytes = source.length;
       }
 
+      bytesByWidth[format].set(targetWidth, bytes);
       encoded[format].push({
         url: `${PUBLIC_PREFIX}${fileName}`,
         width: targetWidth,
@@ -83,8 +133,20 @@ async function encodePreset(
     }
   }
 
+  // `<picture>` takes the first source it can decode, so an AVIF that is
+  // heavier than its WebP twin would be actively harmful. Drop the whole AVIF
+  // set when it does not win, rather than leaving a ragged srcset.
+  const avifWins = encoded.avif.every(({ width: w }) => {
+    const avifBytes = bytesByWidth.avif.get(w) ?? Infinity;
+    const webpBytes = bytesByWidth.webp.get(w) ?? 0;
+    return avifBytes < webpBytes;
+  });
+  if (!avifWins) {
+    encoded.avif = [];
+  }
+
   const fallback = encoded.webp[encoded.webp.length - 1];
-  if (!fallback || encoded.avif.length === 0) {
+  if (!fallback) {
     throw new Error(`Failed to encode ${filePath} (${preset})`);
   }
 
@@ -105,26 +167,33 @@ async function encodePreset(
     width,
     height,
     sources: buildSources(encoded),
-    preload: buildPreload(encoded.avif, spec.sizes),
+    preload: buildPreload(
+      encoded.avif.length > 0 ? encoded.avif : encoded.webp,
+      encoded.avif.length > 0 ? "image/avif" : "image/webp",
+      spec.sizes,
+    ),
     lqip,
   };
 }
 
-function generatedModule(images: Record<keyof typeof SITE_IMAGE_SOURCES, OptimizedImage>): string {
-  const exports = (Object.keys(SITE_IMAGE_SOURCES) as Array<keyof typeof SITE_IMAGE_SOURCES>)
-    .map((name) => `export const ${name}: OptimizedImage = ${JSON.stringify(images[name])};`)
-    .join("\n");
+function generatedModule(images: Record<SiteImageName, OptimizedImage>): string {
+  const exports = SITE_IMAGE_NAMES.map(
+    (name) => `export const ${name}: OptimizedImage = ${JSON.stringify(images[name])};`,
+  ).join("\n");
 
   return `import type { OptimizedImage } from "./image-presets";\n\n${exports}\n`;
 }
 
 export async function buildSiteImages(root: string, publicDir = join(root, "public")) {
   const outDir = join(publicDir, "img");
-  const generatedPath = join(root, "src", "lib", "site-images.generated.ts");
-  const images = {} as Record<keyof typeof SITE_IMAGE_SOURCES, OptimizedImage>;
-  for (const preset of Object.keys(SITE_IMAGE_SOURCES) as Array<keyof typeof SITE_IMAGE_SOURCES>) {
-    images[preset] = await encodePreset(resolve(root, SITE_IMAGE_SOURCES[preset]), preset, outDir);
-  }
+  const generatedPath = join(root, "src", "lib", "images", "site-images.generated.ts");
+  const images = {} as Record<SiteImageName, OptimizedImage>;
+  await Promise.all(
+    SITE_IMAGE_NAMES.map(async (name) => {
+      const { source, preset } = SITE_IMAGE_SOURCES[name];
+      images[name] = await encodePreset(resolve(root, source), preset, outDir);
+    }),
+  );
 
   const contents = generatedModule(images);
   await mkdir(join(root, "src", "lib"), { recursive: true });
@@ -163,13 +232,13 @@ export function siteImages(): Plugin {
       await generateOnce();
     },
     configureServer(server: ViteDevServer) {
-      for (const relative of Object.values(SITE_IMAGE_SOURCES)) {
-        void server.watcher.add(resolve(root, relative));
+      for (const { source } of Object.values(SITE_IMAGE_SOURCES)) {
+        void server.watcher.add(resolve(root, source));
       }
 
       server.watcher.on("change", (file) => {
         const touched = Object.values(SITE_IMAGE_SOURCES).some(
-          (relative) => resolve(root, relative) === file,
+          ({ source }) => resolve(root, source) === file,
         );
         if (touched) {
           void generateOnce();

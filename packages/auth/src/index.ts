@@ -25,10 +25,19 @@ export function createAuth() {
       enabled: true,
       disableSignUp: true,
     },
+    rateLimit: {
+      enabled: env.ENVIRONMENT === "production",
+      window: 60,
+      max: 100,
+      storage: "database",
+    },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,
     advanced: {
       defaultCookieAttributes: cookies,
+      ipAddress: {
+        ipAddressHeaders: ["cf-connecting-ip"],
+      },
       ...(env.AUTH_COOKIE_DOMAIN
         ? {
             crossSubDomainCookies: {

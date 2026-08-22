@@ -1,0 +1,184 @@
+---
+import { auditActionLabel } from "@portfolio-stack/api/schemas/admin/activity";
+import AdminHeader from "../../components/admin/AdminHeader.astro";
+import AdminStatCard from "../../components/admin/AdminStatCard.astro";
+import AdminLayout from "../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin", 302);
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+type Overview = Awaited<ReturnType<typeof api.admin.overview>>;
+
+let overview: Overview | null = null;
+let dataUnavailable = false;
+
+try {
+  overview = await api.admin.overview();
+} catch {
+  dataUnavailable = true;
+}
+
+const dateFormatter = new Intl.DateTimeFormat("en-KE", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+});
+const dateTimeFormatter = new Intl.DateTimeFormat("en-KE", {
+  day: "2-digit",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+const today = dateFormatter.format(new Date());
+const projectCounts = overview?.projects ?? { total: 0, published: 0, drafts: 0 };
+const contactCounts = overview?.contacts ?? { total: 0, pending: 0, failed: 0, unread: 0 };
+---
+
+<AdminLayout
+  title="Overview"
+  description="A private overview of portfolio content, publishing, and contact activity."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="Private workspace"
+    title={`Welcome, ${admin.name.split(" ")[0]}`}
+    description="Your server-rendered operational view across publishing, messages, media, settings, and audited admin activity."
+  >
+    <span slot="actions" class="admin-date-chip">{today}</span>
+  </AdminHeader>
+
+  {
+    dataUnavailable && (
+      <p class="admin-data-alert" role="status">
+        Live dashboard data is temporarily unavailable. Admin access remains protected; refresh once the data service is healthy.
+      </p>
+    )
+  }
+
+  <section aria-label="Portfolio statistics" class="admin-stat-grid">
+    <AdminStatCard
+      label="All projects"
+      value={projectCounts.total}
+      detail="Case studies in the database"
+    />
+    <AdminStatCard
+      label="Published"
+      value={projectCounts.published}
+      detail="Visible on the public portfolio"
+      tone="positive"
+    />
+    <AdminStatCard
+      label="Drafts"
+      value={projectCounts.drafts}
+      detail="Not currently public"
+      tone={projectCounts.drafts > 0 ? "attention" : "default"}
+    />
+    <AdminStatCard
+      label="Messages"
+      value={contactCounts.total}
+      detail={`${contactCounts.unread} unread · ${contactCounts.failed} failed`}
+      tone={contactCounts.unread > 0 || contactCounts.failed > 0 ? "attention" : "default"}
+    />
+  </section>
+
+  <div class="admin-dashboard-grid">
+    <section class="admin-panel" aria-labelledby="recent-projects-heading">
+      <header class="admin-panel__header">
+        <h2 id="recent-projects-heading">Recently updated projects</h2>
+        <span>{overview?.recentProjects.length ?? 0} shown</span>
+      </header>
+      {
+        overview?.recentProjects.length ? (
+          <ul class="admin-list">
+            {overview.recentProjects.map((project) => (
+              <li class="admin-list__item">
+                <span class="admin-list__copy">
+                  <strong>{project.title}</strong>
+                  <span>Updated {dateTimeFormatter.format(new Date(project.updatedAt))}</span>
+                </span>
+                <span class:list={["admin-status", project.isPublished && "admin-status--published"]}>
+                  {project.isPublished ? "Published" : "Draft"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="admin-empty-state">No projects are available yet. Create a private draft to begin.</p>
+        )
+      }
+    </section>
+
+    <section class="admin-panel" aria-labelledby="foundation-heading">
+      <header class="admin-panel__header">
+        <h2 id="foundation-heading">Foundation status</h2>
+        <span>Ready</span>
+      </header>
+      <ul class="admin-foundation-list">
+        <li>
+          <i aria-hidden="true">✓</i>
+          <span><strong>Server-side access gate</strong><span>Unauthorized requests never render admin HTML.</span></span>
+        </li>
+        <li>
+          <i aria-hidden="true">✓</i>
+          <span><strong>Private cache policy</strong><span>Admin responses are no-store and excluded from search.</span></span>
+        </li>
+        <li>
+          <i aria-hidden="true">✓</i>
+          <span><strong>JavaScript-free shell</strong><span>Navigation and dashboard data work without hydration.</span></span>
+        </li>
+        <li>
+          <i aria-hidden="true">✓</i>
+          <span><strong>Typed service boundary</strong><span>Admin data passes through an allowlisted API procedure.</span></span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="admin-panel" aria-labelledby="recent-messages-heading">
+      <header class="admin-panel__header">
+        <h2 id="recent-messages-heading">Recent messages</h2>
+        <span>{overview?.recentContacts.length ?? 0} shown</span>
+      </header>
+      {
+        overview?.recentContacts.length ? (
+          <ul class="admin-list">
+            {overview.recentContacts.map((message) => (
+              <li class="admin-list__item">
+                <span class="admin-list__copy">
+                  <strong><a href={`/admin/messages/${encodeURIComponent(message.id)}`}>{message.name}</a></strong>
+                  <span>{message.email} · {dateTimeFormatter.format(new Date(message.createdAt))}</span>
+                </span>
+                <span class:list={["admin-status", !message.readAt && "admin-status--pending"]}>{message.readAt ? "Read" : "Unread"}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="admin-empty-state">No contact submissions have arrived yet.</p>
+        )
+      }
+    </section>
+
+    <section class="admin-panel admin-dashboard-activity" aria-labelledby="recent-activity-heading">
+      <header class="admin-panel__header">
+        <h2 id="recent-activity-heading">Recent admin activity</h2>
+        <a href="/admin/activity">View full history</a>
+      </header>
+      {overview?.recentActivity.length ? (
+        <ul class="admin-list admin-dashboard-activity__list">
+          {overview.recentActivity.map((event) => (
+            <li class="admin-list__item">
+              <span class="admin-list__copy">
+                <strong>{auditActionLabel(event.action)}</strong>
+                <span>{event.entityId || event.entityType} · {event.actorEmail}</span>
+              </span>
+              <time datetime={new Date(event.createdAt).toISOString()}>{dateTimeFormatter.format(new Date(event.createdAt))}</time>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="admin-empty-state">Successful admin changes will appear here.</p>
+      )}
+    </section>
+  </div>
+</AdminLayout>

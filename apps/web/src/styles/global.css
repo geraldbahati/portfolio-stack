@@ -108,8 +108,16 @@
   }
 }
 
+/* Animating background-position keeps the compositor off the job and repaints
+   forever. The element lives inside the nav overlay, so it only needs to run
+   while that overlay is open. */
 .animate-glitch-shimmer {
   animation: glitch-shimmer 10s linear infinite alternate;
+  animation-play-state: paused;
+}
+
+[data-site-menu]:not([aria-hidden="true"]) .animate-glitch-shimmer {
+  animation-play-state: running;
 }
 
 @keyframes nav-slide-down {

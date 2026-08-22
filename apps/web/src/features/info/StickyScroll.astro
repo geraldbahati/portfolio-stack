@@ -1,0 +1,60 @@
+---
+import type { OptimizedImage } from "../../lib/images/image-presets";
+import {
+  serviceAi,
+  serviceAiBackdrop,
+  serviceBackend,
+  serviceBackendBackdrop,
+  serviceFrontend,
+  serviceFrontendBackdrop,
+  serviceInfrastructure,
+  serviceInfrastructureBackdrop,
+} from "../../lib/images/site-images";
+import { SERVICE_SECTIONS, type ServiceId } from "./copy";
+import ServiceCopy from "./ServiceCopy.astro";
+import ServicePanel from "./ServicePanel.astro";
+
+const images: Record<ServiceId, { photo: OptimizedImage; backdrop: OptimizedImage }> = {
+  frontend: { photo: serviceFrontend, backdrop: serviceFrontendBackdrop },
+  backend: { photo: serviceBackend, backdrop: serviceBackendBackdrop },
+  infrastructure: { photo: serviceInfrastructure, backdrop: serviceInfrastructureBackdrop },
+  ai: { photo: serviceAi, backdrop: serviceAiBackdrop },
+};
+
+const stickyHeight = `${(SERVICE_SECTIONS.length - 0.25) * 100}vh`;
+---
+
+<div data-sticky-scroll class="info-layout" style={`--sticky-track-h: ${stickyHeight}`}>
+  <div class="info-texts">
+    {
+      SERVICE_SECTIONS.map((section, index) => (
+        <ServiceCopy
+          label={section.label}
+          title={section.title}
+          description={section.description}
+          bullets={section.bullets}
+          index={index}
+        />
+      ))
+    }
+  </div>
+  <div class="info-media">
+    <div class="info-track">
+      <div class="info-track__spacer"></div>
+      <div data-sticky-panel>
+        <div class="info-stack">
+          {
+            SERVICE_SECTIONS.map((section, index) => (
+              <ServicePanel
+                image={images[section.id].photo}
+                backdrop={images[section.id].backdrop}
+                title={section.title}
+                index={index}
+              />
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

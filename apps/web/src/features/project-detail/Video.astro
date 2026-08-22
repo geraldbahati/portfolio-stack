@@ -1,0 +1,116 @@
+---
+import { PUBLIC_IMAGE_TRANSFORM_ZONE, PUBLIC_STREAM_CUSTOMER } from "astro:env/client";
+import type { PublishedProject } from "@portfolio-stack/api/routers/projects";
+
+import "../../components/project-card/project-card.css";
+import { projectMediaAssets } from "../../lib/project-media/poster";
+import { LIVE_HINT, LIVE_HINT_MOBILE } from "./copy";
+
+interface Props {
+  project: PublishedProject;
+}
+
+const { project } = Astro.props;
+const media = projectMediaAssets(project, {
+  streamCustomer: PUBLIC_STREAM_CUSTOMER,
+  transformZone: PUBLIC_IMAGE_TRANSFORM_ZONE,
+});
+const hasUrl = Boolean(project.url);
+const alt = project.alt || project.title;
+---
+
+{
+  project.type === "video" && (
+    <section class="project-deferred-section bg-background py-24">
+      <div class="mx-auto max-w-4xl px-2">
+        <p class="project-live-hint mb-4 flex flex-col items-center text-sm font-medium text-primary lg:hidden" data-reveal="up">
+          {LIVE_HINT_MOBILE}
+          <svg class="mt-1 h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M12 5v14M19 12l-7 7-7-7"></path>
+          </svg>
+        </p>
+        <div class="relative">
+          {hasUrl && (
+            <>
+              <div
+                class="project-live-hint pointer-events-none absolute -left-4 top-24 z-10 hidden items-center justify-center lg:flex md:-left-56 md:top-8"
+                data-reveal="up"
+                aria-hidden="true"
+              >
+                <span class="mb-32 -mr-20 whitespace-nowrap text-xl font-medium text-primary md:text-2xl">{LIVE_HINT}</span>
+                <svg class="h-28 w-28 text-primary" viewBox="0 0 120 120" fill="none">
+                  <path d="M12 18c35 5 58 26 65 62" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                  <path d="m64 70 14 12 8-17" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </div>
+              <div
+                class="project-live-hint pointer-events-none absolute -right-4 top-1/2 z-10 hidden flex-col items-end gap-4 lg:flex md:-right-32"
+                data-reveal="up"
+                aria-hidden="true"
+              >
+                <span class="-mr-16 whitespace-nowrap text-xl font-medium text-primary md:text-2xl">Click to visit</span>
+                <svg class="mr-2 h-24 w-24 rotate-[20deg] text-primary" viewBox="0 0 120 120" fill="none">
+                  <path d="M18 20c10 38 34 60 70 67" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                  <path d="m76 73 13 15-19 5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+              </div>
+            </>
+          )}
+          <div
+            data-showcase-video
+            data-media-type="video"
+            data-media-src={media.hlsSrc}
+            data-live-url={project.url ?? undefined}
+            class:list={[
+              "project-card relative w-full overflow-hidden rounded-lg border border-black/10 shadow-2xl",
+              hasUrl && "is-live",
+            ]}
+            style="aspect-ratio: 16 / 9; --mx: 50%; --my: 50%"
+          >
+            {hasUrl && (
+              <div class="project-card__cursor" aria-hidden="true">
+                View
+                <svg class="ml-1 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+              </div>
+            )}
+            <div class="project-card__media absolute inset-0">
+              {media.posterSrc && (
+                <picture data-project-poster class="project-card__poster">
+                  {media.sources.map((source) => (
+                    <source type={source.type} srcset={source.srcset} sizes={media.sizes} />
+                  ))}
+                  <img
+                    src={media.posterSrc}
+                    alt=""
+                    width="1280"
+                    height="720"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
+              )}
+              <video
+                class="project-card__video"
+                poster={media.nativePoster ?? undefined}
+                muted
+                loop
+                playsinline
+                preload="none"
+                crossorigin="anonymous"
+                aria-hidden="true"
+              >
+              </video>
+              <div class="project-card__fallback">
+                <span>Media unavailable</span>
+              </div>
+            </div>
+            {project.url && <a href={project.url} data-live-link class="absolute inset-0 z-20" target="_blank" rel="noopener noreferrer" aria-label={`View ${alt} website`}></a>}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}

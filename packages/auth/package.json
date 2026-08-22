@@ -2,18 +2,11 @@
   "name": "@portfolio-stack/auth",
   "type": "module",
   "exports": {
-    ".": {
-      "default": "./src/index.ts"
-    },
-    "./admin": {
-      "default": "./src/admin.ts"
-    },
-    "./origins": {
-      "default": "./src/origins.ts"
-    },
-    "./*": {
-      "default": "./src/*.ts"
-    }
+    ".": "./src/index.ts",
+    "./admin": "./src/admin.ts",
+    "./origins": "./src/origins.ts",
+    "./seed-admin": "./src/seed-admin.ts",
+    "./seed-admin-http": "./src/seed-admin-http.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

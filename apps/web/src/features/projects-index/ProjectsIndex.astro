@@ -1,0 +1,84 @@
+---
+import type { PublishedProject } from "@portfolio-stack/api/routers/projects";
+
+import ProjectCard from "../../components/project-card/ProjectCard.astro";
+import { IMAGE_PRESETS } from "../../lib/images/image-presets";
+import { DESCRIPTION, EMPTY_COPY, HEADING } from "./copy";
+import "./projects-index.css";
+
+interface Props {
+  projects: PublishedProject[];
+}
+
+const { projects } = Astro.props;
+---
+
+<div data-projects-index data-playback="on">
+  <header class="mx-auto max-w-7xl px-6 pt-20 pb-12 md:pt-24 lg:px-8 lg:pt-32">
+    <h1 class="mb-6 text-4xl font-bold text-foreground" style="font-size: 2.25rem">{HEADING}</h1>
+    <p class="max-w-3xl text-base leading-relaxed text-muted-foreground">{DESCRIPTION}</p>
+  </header>
+
+  <div class="mx-auto max-w-7xl px-6 lg:px-8">
+    <hr class="mb-12 border-0 border-t border-border" />
+  </div>
+
+  <section class="mx-auto max-w-7xl px-6 pb-20 lg:px-8" aria-label={HEADING}>
+    {
+      projects.length === 0 ? (
+        <p class="text-base text-muted-foreground">{EMPTY_COPY}</p>
+      ) : (
+        <div class="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+          {projects.map((project, index) => {
+            const badges = project.badges ?? [];
+            const leftBadges = badges.filter((badge) => !badge.position || badge.position === "bottom-left");
+            const rightBadges = badges.filter((badge) => badge.position === "bottom-right");
+
+            return (
+              <div class="flex flex-col" data-project-item>
+                <h2 class="mb-4 text-xl font-semibold text-foreground lg:text-2xl">
+                  <a href={`/projects/${project.id}`} data-astro-prefetch="hover" class="transition-colors hover:text-primary">
+                    {project.title}
+                  </a>
+                </h2>
+                <div class="mb-4 flex-1">
+                  <ProjectCard
+                    project={project}
+                    sizes={IMAGE_PRESETS.projectIndex.sizes}
+                    priority={index === 0}
+                    showBadges={false}
+                    class="shadow-lg transition-shadow duration-300 hover:shadow-xl"
+                  />
+                </div>
+                {badges.length > 0 && (
+                  <div class="flex flex-wrap gap-2">
+                    <div class="flex flex-1 flex-wrap gap-2">
+                      {leftBadges.map((badge) => (
+                        <span class="inline-flex items-center rounded-full bg-muted px-3 py-1 text-sm font-medium text-gray-700">
+                          {badge.text}
+                        </span>
+                      ))}
+                    </div>
+                    {rightBadges.length > 0 && (
+                      <div class="flex flex-wrap justify-end gap-2">
+                        {rightBadges.map((badge) => (
+                          <span class="inline-flex items-center rounded-full bg-muted px-3 py-1 text-sm font-medium text-gray-700">
+                            {badge.text}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )
+    }
+  </section>
+</div>
+
+<script>
+  import "./boot";
+</script>

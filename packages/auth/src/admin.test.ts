@@ -1,14 +1,23 @@
 import { describe, expect, it } from "vitest";
 
-import { isAdminEnabled, isAllowedAdminEmail } from "./admin";
+import { E2E_ADMIN_EMAIL, isAdminEnabled, isAllowedAdminEmail } from "./admin";
 import { cookieAttributes, parseTrustedOrigins, streamAllowedOrigins } from "./origins";
 
 describe("admin allowlist", () => {
   it("matches the two known addresses, case-insensitively", () => {
-    expect(isAllowedAdminEmail("journeytoharvard@gmail.com")).toBe(true);
-    expect(isAllowedAdminEmail("  BahatiGerald0@gmail.com ")).toBe(true);
+    expect(isAllowedAdminEmail("hello@geraldbahati.dev")).toBe(true);
+    expect(isAllowedAdminEmail("  Hello@GeraldBahati.dev ")).toBe(true);
     expect(isAllowedAdminEmail("stranger@example.com")).toBe(false);
+    // Removed from the allowlist; kept as explicit regressions.
+    expect(isAllowedAdminEmail("journeytoharvard@gmail.com")).toBe(false);
+    expect(isAllowedAdminEmail("bahatigerald0@gmail.com")).toBe(false);
     expect(isAllowedAdminEmail(null)).toBe(false);
+  });
+
+  it("permits the automation account only in the test environment", () => {
+    expect(isAllowedAdminEmail(E2E_ADMIN_EMAIL, "test")).toBe(true);
+    expect(isAllowedAdminEmail(E2E_ADMIN_EMAIL, "development")).toBe(false);
+    expect(isAllowedAdminEmail(E2E_ADMIN_EMAIL, "production")).toBe(false);
   });
 
   it("treats only true/'true' as enabled", () => {
@@ -28,14 +37,14 @@ describe("origins", () => {
     ).toEqual(["http://localhost:4321", "https://geraldbahati.dev"]);
   });
 
-  it("uses lax cookies on local http and none+secure otherwise", () => {
+  it("uses same-site cookies locally and securely across production subdomains", () => {
     expect(cookieAttributes("development", "http://localhost:3000")).toEqual({
       sameSite: "lax",
       secure: false,
       httpOnly: true,
     });
-    expect(cookieAttributes("production", "https://api.geraldbahati.dev")).toEqual({
-      sameSite: "none",
+    expect(cookieAttributes("production", "https://portfolio-api.geraldbahati.dev")).toEqual({
+      sameSite: "lax",
       secure: true,
       httpOnly: true,
     });

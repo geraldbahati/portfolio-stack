@@ -1,21 +1,10 @@
 import type { APIRoute } from "astro";
 
-import { SITE_URL } from "../lib/site";
+import { renderRobotsTxt } from "../lib/seo/robots";
 
 export const prerender = true;
 
-const body = `User-agent: *
-Allow: /
-Disallow: /admin
-Disallow: /dashboard
-Disallow: /login
-Disallow: /signup
-Disallow: /gbx
-Disallow: /monitoring
-
-Sitemap: ${SITE_URL}/sitemap.xml
-Host: ${new URL(SITE_URL).host}
-`;
+const body = renderRobotsTxt();
 
 export const GET: APIRoute = () =>
   new Response(body, {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { toPublishedCaseStudy, toPublishedProject } from "./published-project";
+import { toPublishedCaseStudy, toPublishedProject } from "../schemas/published-project";
 
 const base = {
   id: "webline-store",

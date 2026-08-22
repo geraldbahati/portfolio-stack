@@ -18,11 +18,11 @@ type StreamDirectUploadResponse = {
 
 function streamConfig() {
   const accountId = env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = env.CLOUDFLARE_API_TOKEN;
+  const apiToken = env.CLOUDFLARE_STREAM_API_TOKEN;
   if (!accountId || !apiToken) {
     throw new ORPCError("INTERNAL_SERVER_ERROR", {
       message:
-        "Cloudflare Stream is not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN.",
+        "Cloudflare Stream is not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_STREAM_API_TOKEN.",
     });
   }
   return { accountId, apiToken };

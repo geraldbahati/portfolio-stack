@@ -1,4 +1,5 @@
 {
   "extends": "@portfolio-stack/config/tsconfig.base.json",
-  "include": ["alchemy.run.ts"]
+  "include": ["alchemy.run.ts", "src/**/*.ts"],
+  "exclude": ["src/**/*.test.ts"]
 }

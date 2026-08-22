@@ -1,0 +1,156 @@
+---
+import type { PublishedProject } from "@portfolio-stack/api/routers/projects";
+import Picture from "../../components/Picture.astro";
+import ProjectCard from "../../components/project-card/ProjectCard.astro";
+import SectionDivider from "../../components/SectionDivider.astro";
+import SocialIcon from "../../components/SocialIcon.astro";
+import { IMAGE_PRESETS } from "../../lib/images/image-presets";
+import { consultation } from "../../lib/images/site-images";
+import { SOCIAL_LINKS } from "../../lib/navigation";
+import {
+  FAQ_DIVIDER,
+  FAQ_HEADING,
+  FAQ_IMAGE_ALT,
+  FAQ_INTRO,
+  PROJECTS_DESCRIPTION,
+  PROJECTS_TITLE,
+} from "./copy";
+import FaqAccordion from "./FaqAccordion.astro";
+import "./projects-faq.css";
+
+interface Props {
+  projects: PublishedProject[];
+}
+
+const { projects } = Astro.props;
+const spacerClass =
+  "w-[calc(50vw-45vw)] md:w-[calc(50vw-250px)] lg:w-[calc(50vw-333px)] laptop:w-[calc(50vw-270px)] short:w-[calc(50vw-250px)] flex-shrink-0";
+const cardClass =
+  "w-[90vw] md:w-[500px] lg:w-[666px] laptop:w-[540px] short:w-[500px] flex-shrink-0";
+---
+
+<div id="CombinedProjectsFaqSection" data-projects-faq>
+  {
+    projects.length > 0 && (
+      <div
+        data-projects-scroll-root
+        data-playback="on"
+        class="relative h-[200vh]"
+      >
+        <div
+          data-projects-sticky
+          class="sticky top-0 isolate h-screen overflow-hidden"
+        >
+          <div data-projects-surface class="projects-surface pointer-events-none absolute inset-0 z-0">
+            <div class="projects-surface__light"></div>
+            <div class="projects-surface__dark"></div>
+          </div>
+          <div data-projects-header class="absolute top-0 right-0 left-0 z-40 pt-16 short:pt-20">
+            <div class="mx-auto max-w-7xl px-6 pb-12 short:pb-4">
+              <div class="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 short:gap-4">
+                <div data-projects-title-wrap>
+                  <h2
+                    data-projects-title
+                    class="text-4xl leading-tight font-medium tracking-tight text-text-primary lg:text-5xl short:text-2xl"
+                  >
+                    {PROJECTS_TITLE}
+                  </h2>
+                </div>
+                <div data-projects-desc-wrap class="lg:pl-12">
+                  <p
+                    data-projects-desc
+                    class="text-base leading-relaxed text-text-secondary"
+                  >
+                    {PROJECTS_DESCRIPTION}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="relative z-10 flex h-full items-start pt-80 pb-20 lg:pt-64 short:pt-40 short:pb-4">
+            <div data-projects-viewport class="relative w-full min-w-0 overflow-hidden">
+              <div data-projects-track class="relative flex w-max gap-6">
+                <div class={spacerClass}></div>
+                <div data-projects-area class="flex gap-6 px-6">
+                  {projects.map((project) => (
+                    <div class={cardClass}>
+                      <ProjectCard project={project} aspectRatio="4 / 3" sizes={IMAGE_PRESETS.projectCard.sizes} />
+                    </div>
+                  ))}
+                </div>
+                <div class={spacerClass}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  <section
+    data-section-id="faq"
+    data-faq-section
+    class:list={["relative z-10 bg-black text-white", projects.length === 0 && "mt-0"]}
+    style={
+      projects.length > 0
+        ? "--faq-offset: 30vh; margin-top: calc(-1 * var(--faq-offset)); transform: translate3d(0, var(--faq-offset), 0)"
+        : undefined
+    }
+  >
+    <div class="pb-32 short:pb-16">
+      <div class="container mx-auto max-w-7xl px-6 pt-20 lg:px-16 short:pt-10">
+        <SectionDivider
+          label={FAQ_DIVIDER.label}
+          counter={FAQ_DIVIDER.counter}
+          dividerColor="bg-primary/50"
+        />
+      </div>
+
+      <div class="container mx-auto max-w-7xl px-6 py-20 lg:px-16 short:py-10">
+        <div class="mb-32 grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-20 short:mb-16 short:gap-12">
+          <div class="flex items-end gap-6">
+            <div data-faq-social class="hidden flex-col gap-6 lg:flex">
+              {
+                SOCIAL_LINKS.map((social, index) => (
+                  <a
+                    href={social.href}
+                    target="_blank"
+                    rel="me noopener noreferrer"
+                    aria-label={social.label}
+                    class="cursor-pointer text-gray-400 transition duration-500 ease-out hover:scale-110 hover:text-text-inverted active:scale-95"
+                    style={`--i: ${index}`}
+                  >
+                    <SocialIcon id={social.id} size={20} />
+                  </a>
+                ))
+              }
+            </div>
+            <div class="relative w-full max-w-[540px] overflow-hidden rounded-lg short:max-w-[420px]">
+              <Picture
+                src={consultation}
+                alt={FAQ_IMAGE_ALT}
+                class="block"
+                imgClass="consultation-photo h-auto w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          <div class="max-w-xl">
+            <h2 class="mb-8 text-3xl font-light tracking-tight short:mb-4 short:text-2xl">{FAQ_HEADING}</h2>
+            <p class="text-base leading-relaxed font-light text-gray-400">{FAQ_INTRO}</p>
+          </div>
+        </div>
+
+        <div class="ml-auto max-w-4xl">
+          <FaqAccordion />
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import "./boot";
+</script>

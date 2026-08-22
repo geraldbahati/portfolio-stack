@@ -12,6 +12,8 @@ export const contactSubmission = sqliteTable(
     message: text("message").notNull(),
     emailId: text("email_id"),
     status: text("status").$type<ContactSubmissionStatus>().notNull().default("pending"),
+    readAt: integer("read_at", { mode: "timestamp_ms" }),
+    archivedAt: integer("archived_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
       .notNull(),
@@ -20,6 +22,8 @@ export const contactSubmission = sqliteTable(
     index("contact_submission_email_idx").on(table.email),
     index("contact_submission_created_idx").on(table.createdAt),
     index("contact_submission_status_idx").on(table.status),
+    index("contact_submission_read_idx").on(table.readAt),
+    index("contact_submission_archived_idx").on(table.archivedAt),
     index("contact_submission_email_id_idx").on(table.emailId),
   ],
 );

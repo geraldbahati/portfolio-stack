@@ -21,9 +21,13 @@ export class SeedAdminError extends Error {
   }
 }
 
-export async function seedAdminUser(db: ReturnType<typeof createDb>, input: SeedAdminInput) {
+export async function seedAdminUser(
+  db: ReturnType<typeof createDb>,
+  input: SeedAdminInput,
+  environment?: string,
+) {
   const email = input.email.trim().toLowerCase();
-  if (!isAllowedAdminEmail(email)) {
+  if (!isAllowedAdminEmail(email, environment)) {
     throw new SeedAdminError("Email is not on the admin allowlist", "not_allowlisted");
   }
   if (input.password.length < 12) {

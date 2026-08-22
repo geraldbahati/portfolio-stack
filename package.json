@@ -30,14 +30,17 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "preflight:production": "bun scripts/production-preflight.ts",
     "verify:deployment": "bun scripts/verify-deployment.ts",
     "check": "bun run lint && bun run check-types && bun run test",
+    "release:check": "bun run preflight:production && bun run check && bun run build && bun run test:e2e",
     "db:seed-admin": "bun packages/auth/src/seed-admin-cli.ts",
-    "db:seed-projects": "bun packages/db/src/seed-projects-cli.ts",
+    "db:seed-projects": "bun packages/db/src/seeds/cli.ts",
     "dev:web": "turbo run dev -F web --",
     "dev:server": "turbo run dev -F server --",
     "db:generate": "turbo run db:generate -F @portfolio-stack/db --",
     "deploy": "turbo run deploy -F @portfolio-stack/infra --",
+    "deploy:production": "bun run preflight:production && PORTFOLIO_ENV=production turbo run deploy -F @portfolio-stack/infra -- --stage production",
     "destroy": "turbo run destroy -F @portfolio-stack/infra --"
   },
   "dependencies": {

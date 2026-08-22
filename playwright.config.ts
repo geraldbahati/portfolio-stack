@@ -1,6 +1,21 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import {
+  ADMIN_AUTH_FILE,
+  E2E_SEED_SECRET,
+  LOCAL_E2E_API_URL,
+  LOCAL_E2E_WEB_URL,
+} from "./e2e/support";
+
 const externalBaseUrl = process.env.E2E_BASE_URL;
+const externalAdminCredentials = Boolean(
+  process.env.E2E_ADMIN_EMAIL && process.env.E2E_ADMIN_PASSWORD,
+);
+const runAdminProject = !externalBaseUrl || externalAdminCredentials;
+
+if (!externalBaseUrl) {
+  process.env.E2E_API_URL = LOCAL_E2E_API_URL;
+}
 
 export default defineConfig({
   testDir: "./e2e",
@@ -12,7 +27,7 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
   use: {
-    baseURL: externalBaseUrl ?? "http://127.0.0.1:4321",
+    baseURL: externalBaseUrl ?? LOCAL_E2E_WEB_URL,
     ...devices["Desktop Chrome"],
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
@@ -21,18 +36,39 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: "bun run dev",
-        url: "http://127.0.0.1:4321",
+        command: "bun run --cwd packages/infra dev -- --stage e2e",
+        url: LOCAL_E2E_WEB_URL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,
         env: {
           ...process.env,
           BETTER_AUTH_SECRET: "e2e-only-secret-at-least-thirty-two-characters",
-          BETTER_AUTH_URL: "http://127.0.0.1:3000",
-          CORS_ORIGIN: "http://127.0.0.1:4321",
-          ENABLE_ADMIN: "false",
+          CORS_ORIGIN: LOCAL_E2E_WEB_URL,
+          E2E_MODE: "true",
           ENVIRONMENT: "test",
+          PUBLIC_TURNSTILE_SITE_KEY: "",
+          RESEND_API_KEY: "",
+          SEED_ADMIN_SECRET: E2E_SEED_SECRET,
+          TURNSTILE_SECRET_KEY: "",
         },
       },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    ...(runAdminProject ? [{ name: "setup", testMatch: /auth\.setup\.ts/ }] : []),
+    {
+      name: "public-chromium",
+      testMatch: /public-site\.spec\.ts/,
+      dependencies: runAdminProject ? ["setup"] : [],
+      use: { ...devices["Desktop Chrome"] },
+    },
+    ...(runAdminProject
+      ? [
+          {
+            name: "admin-chromium",
+            testMatch: /admin\.spec\.ts/,
+            dependencies: ["setup"],
+            use: { ...devices["Desktop Chrome"], storageState: ADMIN_AUTH_FILE },
+          },
+        ]
+      : []),
+  ],
 });

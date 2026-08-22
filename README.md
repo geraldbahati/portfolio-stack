@@ -53,20 +53,24 @@ The API is running at [http://localhost:3000](http://localhost:3000).
 - Target: web on Cloudflare + server on Cloudflare
 - Configure provider login: `cd packages/infra && bunx alchemy login --configure`
 - Dev: bun run dev
-- Deploy: bun run deploy
+- Production verification: `bun run release:check`
+- Production deploy: `bun run deploy:production`
 - Destroy: bun run destroy
 
 `alchemy login --configure` stores the selected Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
 
-Deploys are staged and default to a personal `dev_<username>` stage. For production, run the deploy with an explicit stage from `packages/infra`:
+Deploys are staged and default to a personal `dev_<username>` stage. The production command runs the secret-safe environment preflight first and then targets the explicit `production` stage:
 
 ```bash
-cd packages/infra && bunx alchemy deploy --stage production
+bun run deploy:production
 ```
+
+Follow the complete recovery, migration, smoke-test, and rollback procedure in [the production runbook](docs/production-readiness.md).
+Sentry and PostHog configuration and verification are documented in [the observability guide](docs/observability.md).
 
 ### Production origins
 
-- Required after the first deploy: set `CORS_ORIGIN` in `apps/server/.env` to the exact deployed web origin, such as `https://app.example.com`, then deploy the server again.
+- Before the first production deploy, set `CORS_ORIGIN` to the exact canonical HTTPS web origin. Wildcards, paths, HTTP origins, and redirect-only hostnames fail the production preflight.
 
 ## Project Structure
 
@@ -88,4 +92,7 @@ portfolio-stack/
 - `bun run dev:web`: Start only the web application
 - `bun run dev:server`: Start only the server
 - `bun run check-types`: Check TypeScript types across all apps
+- `bun run release:check`: Run the complete local production gate
+- `bun run preflight:production`: Validate production configuration without printing secrets
+- `bun run verify:deployment -- <web-url> <api-url>`: Run read-only production smoke checks
 - `bun run db:generate`: Generate database client/types

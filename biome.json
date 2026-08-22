@@ -16,7 +16,7 @@
       "!**/bun.lock",
       "!**/packages/db/src/migrations",
       "!**/apps/web/public",
-      "!**/apps/web/src/lib/site-images.generated.ts"
+      "!**/apps/web/src/lib/images/site-images.generated.ts"
     ]
   },
   "formatter": {

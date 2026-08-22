@@ -1,9 +1,9 @@
-**Effective Date:** July 26, 2026<br />
-**Version:** 2.3
+**Effective Date:** August 21, 2026<br />
+**Version:** 2.4
 
 ## 1. Introduction
 
-Welcome to **Gerald Bahati's Portfolio** ("I", "me", or "my"). I am committed to protecting your personal information and respecting your privacy. This Privacy Policy explains how I collect, use, disclose, and safeguard personal information when you visit or use my website at [geraldbahati.dev](https://www.geraldbahati.dev) and related services (collectively, the "Services").
+Welcome to **Gerald Bahati's Portfolio** ("I", "me", or "my"). I am committed to protecting your personal information and respecting your privacy. This Privacy Policy explains how I collect, use, disclose, and safeguard personal information when you visit or use my website at [geraldbahati.dev](https://geraldbahati.dev) and related services (collectively, the "Services").
 
 Please read this Privacy Policy carefully. By using my Services, you agree to the collection and use of information in accordance with this policy. If you do not agree, please do not use the Services.
 
@@ -38,13 +38,14 @@ When you interact with my Services, you may provide:
 
 ### 4.2 Information Collected Automatically
 
-I automatically collect limited technical information needed to operate and secure the Services, such as IP address, browser type, operating system, user agent, and approximate country or region. I do not collect precise GPS location.
+I automatically process limited technical information needed to operate, secure, and diagnose the Services, such as IP address, browser type, operating system, user agent, approximate country or region, request metadata, and application error details. Sentry error monitoring is configured without default personal-information collection, and sensitive query parameters are removed before an error event is sent. I do not collect precise GPS location.
 
 **Only after you accept analytics**, I additionally collect:
 
 - **Usage data:** Pages viewed, time on page, scroll depth, projects opened, and interactions with contact links and navigation.
-- **Session recordings:** Pointer movement, clicks, and scrolling used to find confusing or broken areas. Form inputs are masked at capture, so anything typed into the contact form is not recorded.
-- **Performance and error data:** Core Web Vitals and unhandled browser errors used to diagnose faults.
+- **Performance data:** Core Web Vitals used to understand and improve page performance.
+
+PostHog session recording and automatic element capture are disabled. The portfolio sends page views and the specific interaction events described above only after consent.
 
 ## 5. How I Use Your Information
 
@@ -88,7 +89,7 @@ The portfolio currently uses service providers for:
 - **Database and form processing:** Cloudflare D1 and the portfolio API.
 - **Email delivery:** Resend.
 - **Product analytics:** PostHog EU Cloud, only with your consent.
-- **Error monitoring:** Sentry.
+- **Error monitoring:** Sentry, used as essential operational monitoring with data minimisation and URL scrubbing.
 - **Media delivery:** Cloudflare Stream, Images, and R2.
 - **Authentication:** Better Auth for restricted administration features.
 
@@ -107,6 +108,7 @@ I retain personal information only as long as needed for the purposes described 
 - **Contact form submissions:** Up to 2–3 years, or until a valid deletion request is completed.
 - **Email communications:** Up to 2 years for business correspondence.
 - **Analytics data:** According to the analytics project's configured retention settings.
+- **Application error data:** According to the error-monitoring project's configured retention settings.
 - **Security and server logs:** Generally up to 30 days.
 
 Actual periods may vary with the nature of the request and legal or security requirements.
@@ -133,7 +135,7 @@ The contact form is protected by rate limiting and anti-abuse controls. When you
 
 If you are in the EU, EEA, or UK, the GDPR provides rights similar to those described above. Legal bases may include performance of a contract, compliance with legal obligations, legitimate interests in operating and protecting the site, and consent.
 
-**Consent is the basis for analytics and session recording.** Nothing is collected for those purposes until you accept, and withdrawing consent is as easy as granting it.
+**Consent is the basis for optional product analytics.** Nothing is collected for that purpose until you accept, and withdrawing consent is as easy as granting it. Essential security, abuse prevention, and minimised application-error monitoring rely on legitimate interests in operating and protecting the Services.
 
 ## 13. Children's Privacy
 

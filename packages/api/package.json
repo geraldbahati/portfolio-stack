@@ -2,15 +2,17 @@
   "name": "@portfolio-stack/api",
   "type": "module",
   "exports": {
-    ".": {
-      "default": "./src/index.ts"
-    },
-    "./contact": {
-      "default": "./src/contact/index.ts"
-    },
-    "./*": {
-      "default": "./src/*.ts"
-    }
+    ".": "./src/index.ts",
+    "./context": "./src/context.ts",
+    "./contact": "./src/contact/index.ts",
+    "./routers/index": "./src/routers/index.ts",
+    "./routers/projects": "./src/routers/projects.ts",
+    "./site-settings": "./src/site-settings.ts",
+    "./schemas/published-project": "./src/schemas/published-project.ts",
+    "./schemas/admin/activity": "./src/schemas/admin/activity.ts",
+    "./schemas/admin/media": "./src/schemas/admin/media.ts",
+    "./schemas/admin/message": "./src/schemas/admin/message.ts",
+    "./schemas/admin/project": "./src/schemas/admin/project.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

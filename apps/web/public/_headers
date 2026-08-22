@@ -1,0 +1,31 @@
+# Cloudflare static-asset headers. The adapter merges its own `/_astro/*` rule
+# into this file at build time, so only non-Astro paths belong here.
+
+# vite-plugin-site-images writes content-hashed filenames into /img, but the
+# asset handler runs before the Worker middleware and was serving them with
+# `max-age=0, must-revalidate` — a revalidation round trip per navigation.
+/img/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Stable names, so they get a short TTL rather than an immutable one.
+/favicon.svg
+  Cache-Control: public, max-age=86400
+/apple-touch-icon.png
+  Cache-Control: public, max-age=86400
+/icon-192.png
+  Cache-Control: public, max-age=86400
+/icon-512.png
+  Cache-Control: public, max-age=86400
+/icon-512-maskable.png
+  Cache-Control: public, max-age=86400
+/bio-cutout-mask.svg
+  Cache-Control: public, max-age=86400
+/manifest.webmanifest
+  Cache-Control: public, max-age=86400
+/cta-video.mp4
+  Cache-Control: public, max-age=604800
+
+# Social scrapers re-fetch the card on nearly every share, and both LinkedIn
+# and X give up on a slow first fetch, so this one stays warm at the edge.
+/og.jpg
+  Cache-Control: public, max-age=604800

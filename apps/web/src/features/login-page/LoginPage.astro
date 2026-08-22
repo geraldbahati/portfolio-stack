@@ -1,0 +1,39 @@
+---
+import { PUBLIC_GOOGLE_SITE_VERIFICATION, PUBLIC_POSTHOG_KEY } from "astro:env/client";
+
+import ConsentBanner from "../../components/ConsentBanner.astro";
+import "../../styles/global.css";
+import LoginForm from "./LoginForm.astro";
+import LoginHeader from "./LoginHeader.astro";
+
+const posthogEnabled = Boolean(PUBLIC_POSTHOG_KEY) && import.meta.env.PROD;
+---
+
+<!doctype html>
+<html lang="en" class="dark" data-posthog-enabled={posthogEnabled ? "true" : "false"}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="generator" content={Astro.generator} />
+    {
+      PUBLIC_GOOGLE_SITE_VERIFICATION && (
+        <meta name="google-site-verification" content={PUBLIC_GOOGLE_SITE_VERIFICATION} />
+      )
+    }
+    <title>Sign In - portfolio-stack</title>
+  </head>
+  <body class="min-h-screen bg-neutral-950 text-white">
+    <LoginHeader />
+    <main class="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+      <LoginForm />
+    </main>
+    <ConsentBanner />
+    <script>
+      import "../../client-observability";
+    </script>
+  </body>
+</html>

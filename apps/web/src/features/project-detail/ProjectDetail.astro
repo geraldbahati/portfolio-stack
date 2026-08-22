@@ -1,0 +1,50 @@
+---
+import type { PublishedCaseStudy } from "@portfolio-stack/api/routers/projects";
+import type { OptimizedImage } from "../../lib/images/image-presets";
+import Challenges from "./Challenges.astro";
+import Cta from "./Cta.astro";
+import Gallery from "./Gallery.astro";
+import Hero from "./Hero.astro";
+import Info from "./Info.astro";
+import Metrics from "./Metrics.astro";
+import Navigation from "./Navigation.astro";
+import Testimonial from "./Testimonial.astro";
+import Video from "./Video.astro";
+import "./project-detail.css";
+
+interface Props {
+  study: PublishedCaseStudy;
+  hero?: {
+    src: OptimizedImage;
+    alt: string;
+  } | null;
+}
+
+const { study, hero } = Astro.props;
+---
+
+<div data-project-detail data-project-slug={study.project.id}>
+  <Hero title={study.project.title} hero={hero} />
+  {study.details && <Info details={study.details} />}
+  <Challenges challenges={study.challenges} />
+  <Gallery gallery={study.gallery} />
+  <Video project={study.project} />
+  <Metrics metrics={study.metrics} />
+  {study.testimonial && <Testimonial testimonial={study.testimonial} />}
+  <Navigation previous={study.previous} next={study.next} />
+  <Cta />
+</div>
+
+<noscript>
+  <style is:global>
+    [data-project-detail] [data-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
+    }
+  </style>
+</noscript>
+
+<script>
+  import "./boot";
+</script>

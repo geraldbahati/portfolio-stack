@@ -1,0 +1,38 @@
+---
+import Picture from "../../components/Picture.astro";
+import type { OptimizedImage } from "../../lib/images/image-presets";
+
+interface Props {
+  image: OptimizedImage;
+  backdrop: OptimizedImage;
+  title: string;
+  index: number;
+}
+
+const { image, backdrop, title, index } = Astro.props;
+---
+
+<div
+  data-image-panel
+  class="service-panel"
+  style={`--i: ${index}; z-index: ${index + 1}`}
+>
+  <Picture
+    src={backdrop}
+    alt=""
+    class="service-panel__bg-wrap"
+    imgClass="service-panel__bg"
+    loading="lazy"
+    fetchpriority="low"
+  />
+  <div class="service-panel__shot">
+    <Picture
+      src={image}
+      alt={title}
+      class="service-panel__photo-wrap"
+      imgClass="service-panel__photo"
+      loading="lazy"
+      fetchpriority="low"
+    />
+  </div>
+</div>

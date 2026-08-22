@@ -6,21 +6,28 @@ import {
   PUBLIC_STREAM_CUSTOMER,
 } from "astro:env/client";
 import syneLatin from "@fontsource-variable/syne/files/syne-latin-wght-normal.woff2?url";
+import { socialLinksFromSettings } from "@portfolio-stack/api/site-settings";
 
 import ConsentBanner from "../components/ConsentBanner.astro";
 import Footer from "../components/Footer.astro";
-import Navbar from "../components/Navbar.astro";
-import type { ImagePreload } from "../lib/image-presets";
+import Navbar from "../components/navbar/Navbar.astro";
+import { loadPublicSiteSettings } from "../lib/data/site-settings";
+import type { ImagePreload } from "../lib/images/image-presets";
+import { logo } from "../lib/images/site-images";
+import { personJsonLd, serializeJsonLd } from "../lib/seo/json-ld";
 import {
   canonicalUrl,
-  personJsonLd,
+  OG_IMAGE,
+  OG_IMAGE_URL,
+  PERSON,
   SITE_DESCRIPTION,
+  SITE_KEYWORDS,
   SITE_LANGUAGE,
+  SITE_LOCALE,
   SITE_NAME,
   SITE_TITLE,
-  SOCIAL_PROFILES,
-} from "../lib/site";
-import { logo } from "../lib/site-images";
+  TWITTER_HANDLE,
+} from "../lib/seo/site";
 import "../styles/global.css";
 
 interface Props {
@@ -29,10 +36,14 @@ interface Props {
   theme?: "home" | "page";
   lcpImage?: ImagePreload;
   ogImage?: string;
-  ogType?: "website" | "article";
+  ogImageAlt?: string;
+  ogType?: "website" | "article" | "profile";
   publishedTime?: string;
   modifiedTime?: string;
+  /** Leave unset to index. `false` emits `noindex, follow` — links still flow. */
+  indexable?: boolean;
   robots?: string;
+  keywords?: readonly string[];
   jsonLd?: unknown;
 }
 
@@ -42,16 +53,43 @@ const {
   theme = "page",
   lcpImage,
   ogImage,
+  ogImageAlt,
   ogType = "website",
   publishedTime,
   modifiedTime,
+  indexable = true,
   robots,
+  keywords = SITE_KEYWORDS,
   jsonLd = personJsonLd(),
 } = Astro.props;
 
 const canonical = canonicalUrl(Astro.url.pathname);
 const posthogEnabled = Boolean(PUBLIC_POSTHOG_KEY) && import.meta.env.PROD;
 const streamOrigin = `https://${PUBLIC_STREAM_CUSTOMER}`;
+
+/**
+ * Without `max-image-preview:large` Google shows a thumbnail-sized image (or
+ * none) beside the result and will not surface the page in Discover at all.
+ * The snippet and video caps are lifted for the same reason: the defaults are
+ * conservative, and nothing here needs withholding.
+ */
+const robotsContent =
+  robots ??
+  (indexable
+    ? "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
+    : "noindex, follow");
+
+// Every page gets a card. A share with no image is a grey box on LinkedIn,
+// which is where most of this site's traffic is handed off.
+const socialImage = ogImage ?? OG_IMAGE_URL;
+const socialImageAlt = ogImageAlt ?? (ogImage ? title : OG_IMAGE.alt);
+const isDefaultSocialImage = socialImage === OG_IMAGE_URL;
+
+const siteSettings = await loadPublicSiteSettings();
+const socialLinks = socialLinksFromSettings(siteSettings);
+const socialProfiles = socialLinks
+  .filter((profile) => profile.id !== "whatsapp")
+  .map((profile) => profile.href);
 ---
 
 <!doctype html>
@@ -61,40 +99,67 @@ const streamOrigin = `https://${PUBLIC_STREAM_CUSTOMER}`;
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <meta name="robots" content={robotsContent} />
+    <meta name="author" content={SITE_NAME} />
+    <meta name="keywords" content={keywords.join(", ")} />
     <meta name="theme-color" content={theme === "home" ? "#000000" : "#f5f4ef"} />
-    {robots && <meta name="robots" content={robots} />}
+    <meta name="color-scheme" content="light" />
     <link rel="canonical" href={canonical} />
     <link rel="alternate" hreflang="en-KE" href={canonical} />
     <link rel="alternate" hreflang="x-default" href={canonical} />
+    <link rel="author" href={canonicalUrl("/")} />
+
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={SITE_NAME} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:locale" content="en_KE" />
+    <meta property="og:locale" content={SITE_LOCALE} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:alt" content={socialImageAlt} />
     {
-      publishedTime && <meta property="article:published_time" content={publishedTime} />
-    }
-    {
-      modifiedTime && <meta property="article:modified_time" content={modifiedTime} />
-    }
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
-    <meta name="twitter:description" content={description} />
-    <meta name="twitter:creator" content="@gerald_baha" />
-    {
-      ogImage && (
+      isDefaultSocialImage && (
         <>
-          <meta property="og:image" content={ogImage} />
-          <meta name="twitter:image" content={ogImage} />
+          <meta property="og:image:type" content={OG_IMAGE.type} />
+          <meta property="og:image:width" content={String(OG_IMAGE.width)} />
+          <meta property="og:image:height" content={String(OG_IMAGE.height)} />
         </>
       )
     }
+    {
+      ogType === "profile" && (
+        <>
+          <meta property="profile:first_name" content={PERSON.givenName} />
+          <meta property="profile:last_name" content={PERSON.familyName} />
+          <meta property="profile:username" content={TWITTER_HANDLE.replace("@", "")} />
+        </>
+      )
+    }
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+    {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+    {ogType === "article" && <meta property="article:author" content={SITE_NAME} />}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:site" content={TWITTER_HANDLE} />
+    <meta name="twitter:creator" content={TWITTER_HANDLE} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={socialImageAlt} />
+
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="preload" href={syneLatin} as="font" type="font/woff2" crossorigin />
-    <link rel="preconnect" href={streamOrigin} crossorigin />
+    {/*
+      Project posters and hero images all come from the media zone, so the
+      handshake is on the critical path for every page that renders a card.
+      No `crossorigin` here on purpose: plain `<img>` fetches are non-CORS, and
+      a credentialed preconnect would open a second connection they cannot use.
+    */}
+    <link rel="preconnect" href={PUBLIC_MEDIA_ORIGIN} />
     <link rel="dns-prefetch" href={PUBLIC_MEDIA_ORIGIN} />
+    <link rel="dns-prefetch" href={streamOrigin} />
     {
       lcpImage ? (
         <link
@@ -104,6 +169,7 @@ const streamOrigin = `https://${PUBLIC_STREAM_CUSTOMER}`;
           href={lcpImage.href}
           imagesrcset={lcpImage.imagesrcset}
           imagesizes={lcpImage.imagesizes}
+          fetchpriority="high"
         />
       ) : (
         <link
@@ -113,16 +179,17 @@ const streamOrigin = `https://${PUBLIC_STREAM_CUSTOMER}`;
           href={logo.preload.href}
           imagesrcset={logo.preload.imagesrcset}
           imagesizes={logo.preload.imagesizes}
+          fetchpriority="high"
         />
       )
     }
-    {SOCIAL_PROFILES.map((profile) => <link rel="me" href={profile} />)}
+    {socialProfiles.map((profile) => <link rel="me" href={profile} />)}
     {
       PUBLIC_GOOGLE_SITE_VERIFICATION && (
         <meta name="google-site-verification" content={PUBLIC_GOOGLE_SITE_VERIFICATION} />
       )
     }
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLd)} />
+    <script type="application/ld+json" is:inline set:html={serializeJsonLd(jsonLd)} />
   </head>
   <body
     class:list={[
@@ -131,22 +198,17 @@ const streamOrigin = `https://${PUBLIC_STREAM_CUSTOMER}`;
     ]}
   >
     <a href="#main-content" class="skip-to-content">Skip to content</a>
-    <Navbar />
+    <Navbar socialLinks={socialLinks} />
     <main id="main-content">
       <slot />
     </main>
-    <Footer />
+    <Footer settings={siteSettings} />
     <ConsentBanner />
     <script>
-      import "../lib/site-chrome";
+      import "../components/navbar/chrome";
     </script>
     <script>
-      const boot = () => import("../client-observability");
-      if ("requestIdleCallback" in window) {
-        requestIdleCallback(() => void boot(), { timeout: 4000 });
-      } else {
-        setTimeout(() => void boot(), 1);
-      }
+      import "../client-observability";
     </script>
   </body>
 </html>

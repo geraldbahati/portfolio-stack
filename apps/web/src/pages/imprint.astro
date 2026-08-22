@@ -1,126 +1,16 @@
 ---
+import ImprintPage from "../features/imprint-page/ImprintPage.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { PAGE_COPY } from "../lib/site";
-import "../sections/imprint-page/imprint-page.css";
-import "../sections/simple-legal-page/simple-legal-page.css";
+import { simplePageJsonLd } from "../lib/seo/json-ld";
+import { PAGE_COPY } from "../lib/seo/page-copy";
 ---
 
-<SiteLayout title={`${PAGE_COPY.imprint.title} | Gerald Bahati`} description={PAGE_COPY.imprint.description}>
-  <div class="simple-legal-page">
-    <div class="simple-legal-container">
-      <header class="simple-legal-header">
-        <h1>Imprint</h1>
-        <div class="simple-legal-title-rule" aria-hidden="true"></div>
-      </header>
-
-      <div class="simple-legal-content">
-        <section class="simple-legal-section" aria-labelledby="legal-notice-title">
-          <h2 id="legal-notice-title">Legal Notice</h2>
-          <p>
-            Information in accordance with the Data Protection Act, 2019 (Kenya) and other relevant
-            regulations.
-          </p>
-          <address class="imprint-address">
-            <strong>Gerald Bahati</strong>
-            <span>Kahawa Sukari</span>
-            <span>Nairobi</span>
-            <span>Kenya</span>
-          </address>
-        </section>
-
-        <section class="simple-legal-section" aria-labelledby="contact-information-title">
-          <h2 id="contact-information-title">Contact Information</h2>
-          <p class="imprint-contact-note">
-            Please use the contact form or the information below to get in touch.
-          </p>
-
-          <div class="imprint-contact-grid">
-            <div class="imprint-contact-card">
-              <span class="imprint-contact-label">Email Address</span>
-              <div class="imprint-contact-row">
-                <a href="mailto:contact@geraldbahati.dev">contact@geraldbahati.dev</a>
-                <button
-                  type="button"
-                  class="imprint-copy-button"
-                  data-copy="contact@geraldbahati.dev"
-                  aria-label="Copy email address"
-                >
-                  <svg class="imprint-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                  </svg>
-                  <svg class="imprint-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="m20 6-11 11-5-5"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div class="imprint-contact-card">
-              <span class="imprint-contact-label">Phone Number</span>
-              <div class="imprint-contact-row">
-                <a href="tel:+254704713070">+254 704 713 070</a>
-                <button
-                  type="button"
-                  class="imprint-copy-button"
-                  data-copy="+254 704 713 070"
-                  aria-label="Copy phone number"
-                >
-                  <svg class="imprint-copy-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
-                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
-                  </svg>
-                  <svg class="imprint-check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                    <path d="m20 6-11 11-5-5"></path>
-                  </svg>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="simple-legal-section imprint-responsible" aria-labelledby="responsible-content-title">
-          <h3 id="responsible-content-title">Responsible for Content</h3>
-          <p>
-            Person responsible for the content of this website:<br />
-            Gerald Bahati<br />
-            Kahawa Sukari<br />
-            Nairobi, Kenya
-          </p>
-        </section>
-
-        <section class="simple-legal-section imprint-dispute" aria-labelledby="dispute-resolution-title">
-          <h2 id="dispute-resolution-title">Dispute Resolution</h2>
-          <p>
-            We are not willing or obliged to participate in dispute resolution proceedings before a
-            consumer arbitration board.
-          </p>
-        </section>
-      </div>
-    </div>
-  </div>
+<SiteLayout
+  title={PAGE_COPY.imprint.title}
+  description={PAGE_COPY.imprint.description}
+  keywords={PAGE_COPY.imprint.keywords}
+  indexable={PAGE_COPY.imprint.indexable}
+  jsonLd={simplePageJsonLd(PAGE_COPY.imprint)}
+>
+  <ImprintPage />
 </SiteLayout>
-
-<script>
-  for (const button of document.querySelectorAll<HTMLButtonElement>(".imprint-copy-button")) {
-    button.addEventListener("click", async () => {
-      const value = button.dataset.copy;
-      if (!value) return;
-
-      try {
-        await navigator.clipboard.writeText(value);
-        button.dataset.copied = "true";
-        button.setAttribute("aria-label", "Copied");
-        window.setTimeout(() => {
-          delete button.dataset.copied;
-          button.setAttribute(
-            "aria-label",
-            value.includes("@") ? "Copy email address" : "Copy phone number",
-          );
-        }, 2000);
-      } catch {
-        // The email and phone links remain available if clipboard access is blocked.
-      }
-    });
-  }
-</script>

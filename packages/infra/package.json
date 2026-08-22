@@ -2,6 +2,9 @@
   "name": "@portfolio-stack/infra",
   "private": true,
   "type": "module",
+  "exports": {
+    "./alchemy.run": "./alchemy.run.ts"
+  },
   "scripts": {
     "check-types": "tsc --noEmit",
     "dev": "alchemy dev",

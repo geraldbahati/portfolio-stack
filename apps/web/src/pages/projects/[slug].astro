@@ -1,11 +1,11 @@
 ---
 import { PUBLIC_IMAGE_TRANSFORM_ZONE } from "astro:env/client";
-
+import ProjectDetail from "../../features/project-detail/ProjectDetail.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
-import { loadPublishedProject } from "../../lib/projects";
-import { projectHeroImage, projectOgImage } from "../../lib/remote-image";
-import { projectPageCopy, projectWorkJsonLd } from "../../lib/site";
-import ProjectDetail from "../../sections/project-detail/ProjectDetail.astro";
+import { loadPublishedProject } from "../../lib/data/projects";
+import { projectHeroImage, projectOgImage } from "../../lib/images/remote-image";
+import { projectWorkJsonLd } from "../../lib/seo/json-ld";
+import { projectPageCopy } from "../../lib/seo/page-copy";
 
 const slug = Astro.params.slug;
 
@@ -25,6 +25,9 @@ const copy = projectPageCopy({
   title: study.project.title,
   tagline: study.details?.tagline,
   description: study.project.description,
+  services: study.details?.services,
+  industry: study.details?.industry,
+  client: study.details?.client,
 });
 const heroUrl = study.details?.heroImage;
 const heroImage = heroUrl ? projectHeroImage(heroUrl, PUBLIC_IMAGE_TRANSFORM_ZONE) : null;
@@ -34,8 +37,10 @@ const ogImage = projectOgImage(heroUrl ?? study.project.poster, PUBLIC_IMAGE_TRA
 <SiteLayout
   title={copy.title}
   description={copy.description}
+  keywords={copy.keywords}
   ogType="article"
   ogImage={ogImage}
+  ogImageAlt={study.details?.heroAlt || `${study.project.title} case study by Gerald Bahati`}
   publishedTime={study.project.createdAt}
   modifiedTime={study.project.updatedAt}
   lcpImage={heroImage?.preload}
@@ -48,6 +53,7 @@ const ogImage = projectOgImage(heroUrl ?? study.project.poster, PUBLIC_IMAGE_TRA
     dateModified: study.project.updatedAt,
     keywords: study.details?.services,
     genre: study.details?.industry,
+    client: study.details?.client,
     videoUrl: study.project.type === "video" ? study.project.src : null,
     videoPoster: study.project.poster,
     testimonial: study.testimonial,

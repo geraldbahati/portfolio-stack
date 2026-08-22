@@ -30,11 +30,15 @@ export async function handleSeedAdmin(request: Request) {
   }
 
   try {
-    const result = await seedAdminUser(createDb(), {
-      email: body.email,
-      password: body.password,
-      name: body.name,
-    });
+    const result = await seedAdminUser(
+      createDb(),
+      {
+        email: body.email,
+        password: body.password,
+        name: body.name,
+      },
+      env.ENVIRONMENT,
+    );
     return Response.json(result, { status: result.created ? 201 : 200 });
   } catch (error) {
     if (error instanceof SeedAdminError) {

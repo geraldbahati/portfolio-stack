@@ -1,0 +1,50 @@
+---
+import AdminMobileHeader from "../components/admin/AdminMobileHeader.astro";
+import AdminSidebar from "../components/admin/AdminSidebar.astro";
+import type { AdminSessionUser } from "../lib/admin/session";
+import "../styles/global.css";
+// Ordered to preserve the original cascade — do not reorder.
+import "../styles/admin/tokens.css";
+import "../styles/admin/shell.css";
+import "../styles/admin/primitives.css";
+import "../styles/admin/projects.css";
+import "../styles/admin/messages.css";
+import "../styles/admin/media.css";
+import "../styles/admin/settings.css";
+import "../styles/admin/activity.css";
+import "../styles/admin/responsive.css";
+
+interface Props {
+  title: string;
+  description?: string;
+  user: AdminSessionUser;
+}
+
+const { title, description = "Manage the Gerald Bahati portfolio.", user } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en-KE">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#111111" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <title>{title} · Portfolio Admin</title>
+  </head>
+  <body class="admin-body">
+    <a href="#admin-content" class="skip-to-content">Skip to admin content</a>
+    <div class="admin-shell">
+      <AdminSidebar currentPath={currentPath} user={user} />
+      <div class="admin-workspace">
+        <AdminMobileHeader currentPath={currentPath} user={user} />
+        <main id="admin-content" class="admin-main">
+          <slot />
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

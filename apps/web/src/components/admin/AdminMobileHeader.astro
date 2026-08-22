@@ -1,0 +1,33 @@
+---
+import type { AdminSessionUser } from "../../lib/admin/session";
+import AdminIcon from "./AdminIcon.astro";
+import AdminNavigation from "./AdminNavigation.astro";
+
+interface Props {
+  currentPath: string;
+  user: AdminSessionUser;
+}
+
+const { currentPath, user } = Astro.props;
+---
+
+<header class="admin-mobile-header">
+  <a href="/admin" class="admin-mobile-brand" aria-label="Admin overview">
+    <span aria-hidden="true">GB</span>
+    <strong>Admin</strong>
+  </a>
+  <details class="admin-mobile-menu">
+    <summary aria-label="Open admin navigation">
+      <AdminIcon name="menu" size={22} />
+      <span>Menu</span>
+    </summary>
+    <div class="admin-mobile-menu__panel">
+      <AdminNavigation currentPath={currentPath} compact />
+      <div class="admin-mobile-menu__account">
+        <span>Signed in as</span>
+        <strong>{user.email}</strong>
+        <a href="/">View live portfolio <AdminIcon name="external" size={15} /></a>
+      </div>
+    </div>
+  </details>
+</header>

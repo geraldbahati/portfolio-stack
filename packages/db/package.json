@@ -2,15 +2,18 @@
   "name": "@portfolio-stack/db",
   "type": "module",
   "exports": {
-    ".": {
-      "default": "./src/index.ts"
-    },
-    "./schema/auth": {
-      "default": "./src/schema/auth.ts"
-    },
-    "./*": {
-      "default": "./src/*.ts"
-    }
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./schema/auth": "./src/schema/auth.ts",
+    "./admin": "./src/admin/index.ts",
+    "./admin/activity": "./src/admin/activity.ts",
+    "./admin/messages": "./src/admin/messages.ts",
+    "./admin/projects": "./src/admin/projects.ts",
+    "./audit": "./src/audit.ts",
+    "./contact": "./src/contact.ts",
+    "./projects": "./src/projects.ts",
+    "./site-settings": "./src/site-settings.ts",
+    "./seeds/http": "./src/seeds/http.ts"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",

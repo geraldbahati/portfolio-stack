@@ -1,0 +1,47 @@
+---
+import AdminHeader from "../../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../../components/admin/AdminNotice.astro";
+import AdminProjectForm from "../../../../components/admin/AdminProjectForm.astro";
+import AdminLayout from "../../../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+const id = Astro.params.id;
+if (!admin) return Astro.redirect(`/login?returnTo=${encodeURIComponent(Astro.url.pathname)}`, 302);
+if (!id) return Astro.redirect("/admin/projects?error=not-found", 302);
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+const result = await api.admin.projects.get({ id }).catch(() => null);
+if (!result) return Astro.redirect("/admin/projects?error=not-found", 302);
+
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+const notices: Record<string, string> = {
+  created: "Project draft created. Continue editing or publish when all requirements are complete.",
+  saved: "Project changes saved.",
+  published: "Project published successfully.",
+  unpublished: "Project unpublished successfully.",
+};
+const errors: Record<string, string> = {
+  invalid: "Review the project fields and approved media URLs, then try again.",
+  "not-ready":
+    "The publication request was rejected. Complete the readiness list and type the exact slug.",
+  "save-failed": "The project could not be updated. Please try again.",
+};
+---
+
+<AdminLayout title={`Edit ${result.project.title}`} description="Edit a portfolio project." user={admin}>
+  <AdminHeader
+    eyebrow={`Projects / ${result.project.isPublished ? "Published" : "Draft"}`}
+    title={result.project.title}
+    description={`Edit the project at /projects/${result.project.id}. Saving content never changes its publication state.`}
+  >
+    <div slot="actions" class="admin-header-actions">
+      <a href={`/admin/projects/${result.project.id}/content`} class="admin-button admin-button--primary">Case-study content</a>
+      <a href="/admin/projects" class="admin-button admin-button--secondary">Back to projects</a>
+    </div>
+  </AdminHeader>
+  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+  <AdminProjectForm mode="edit" value={{ ...result.project, details: result.details }} />
+</AdminLayout>

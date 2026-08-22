@@ -1,19 +1,30 @@
 ---
+import {
+  DEFAULT_PUBLIC_SITE_SETTINGS,
+  type PublicSiteSettings,
+  siteSettingsWriteSchema,
+} from "@portfolio-stack/api/site-settings";
+
+interface Props {
+  settings?: PublicSiteSettings;
+}
+
+const { settings = siteSettingsWriteSchema.parse(DEFAULT_PUBLIC_SITE_SETTINGS) } = Astro.props;
 const year = new Date().getFullYear();
 
 const brand = {
   name: "Gerald Bahati.",
-  tagline: "Full-Stack Software Engineer",
+  tagline: settings.professionalTitle,
 };
 
 const contact = {
-  location: "Based in Nairobi, Kenya",
+  location: settings.location,
   link: { text: "make contact", url: "/contact" },
 };
 
 const accessibility = {
-  hours: "Mon – Fri: 9:00 - 18:00",
-  availability: "Async communication via Email",
+  hours: settings.businessHours,
+  availability: settings.availability,
 };
 
 const legal = [

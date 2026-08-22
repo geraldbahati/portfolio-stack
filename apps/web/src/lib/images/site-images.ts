@@ -1,0 +1,15 @@
+export {
+  bio,
+  consultation,
+  hero,
+  logo,
+  overlay,
+  serviceAi,
+  serviceAiBackdrop,
+  serviceBackend,
+  serviceBackendBackdrop,
+  serviceFrontend,
+  serviceFrontendBackdrop,
+  serviceInfrastructure,
+  serviceInfrastructureBackdrop,
+} from "./site-images.generated";

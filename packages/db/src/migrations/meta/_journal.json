@@ -36,6 +36,27 @@
       "when": 1787310335777,
       "tag": "0004_wandering_lord_tyger",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1787314506686,
+      "tag": "0005_nebulous_typhoid_mary",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787319898872,
+      "tag": "0006_sad_vapor",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1787324623685,
+      "tag": "0007_breezy_nightmare",
+      "breakpoints": true
     }
   ]
 }

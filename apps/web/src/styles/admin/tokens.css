@@ -1,0 +1,19 @@
+:root {
+  --admin-ink: #111111;
+  --admin-paper: #f3f1ea;
+  --admin-panel: #fbfaf6;
+  --admin-line: rgba(17, 17, 17, 0.14);
+  --admin-muted: #686760;
+  --admin-orange: #e66d32;
+  --admin-green: #247a50;
+  --admin-red: #a83d35;
+}
+
+.admin-body {
+  min-height: 100vh;
+  background:
+    linear-gradient(rgba(17, 17, 17, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.045) 1px, transparent 1px), var(--admin-paper);
+  background-size: 34px 34px;
+  color: var(--admin-ink);
+}

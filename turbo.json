@@ -1,7 +1,11 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalPassThroughEnv": [
+    "E2E_API_URL",
+    "E2E_ADMIN_EMAIL",
+    "E2E_ADMIN_PASSWORD",
     "E2E_BASE_URL",
+    "E2E_MODE",
     "SENTRY_AUTH_TOKEN",
     "SENTRY_ORG",
     "SENTRY_PROJECT",
@@ -30,11 +34,13 @@
     },
     "deploy": {
       "cache": false,
-      "interactive": true
+      "interactive": true,
+      "passThroughEnv": ["PORTFOLIO_ENV", "WEB_DOMAIN", "WEB_REDIRECT_DOMAINS"]
     },
     "destroy": {
       "cache": false,
-      "interactive": true
+      "interactive": true,
+      "passThroughEnv": ["PORTFOLIO_ENV"]
     }
   }
 }

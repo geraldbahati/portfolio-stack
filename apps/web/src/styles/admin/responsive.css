@@ -1,0 +1,141 @@
+@media (min-width: 700px) {
+  .admin-stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-grid {
+    grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.85fr);
+  }
+
+  .admin-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-field--wide {
+    grid-column: 1 / -1;
+  }
+
+  .admin-publication {
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  }
+
+  .admin-content-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .admin-message-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .admin-settings-status {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .admin-settings-status__item {
+    border-right: 1px solid var(--admin-line);
+    border-bottom: 0;
+  }
+
+  .admin-settings-status__item:last-child {
+    border-right: 0;
+  }
+
+  .admin-content-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-media-upload {
+    grid-template-columns: minmax(210px, 0.65fr) minmax(0, 1.35fr);
+  }
+
+  .admin-media-upload form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-media-upload__submit {
+    grid-column: 1 / -1;
+  }
+
+  .admin-content-editor > .admin-remove-content-form {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .admin-sidebar {
+    display: flex;
+  }
+
+  .admin-workspace {
+    margin-left: 290px;
+  }
+
+  .admin-mobile-header {
+    display: none;
+  }
+
+  .admin-message-detail-grid {
+    grid-template-columns: minmax(0, 1.5fr) minmax(290px, 0.6fr);
+  }
+}
+
+@media (max-width: 699px) {
+  .admin-page-header {
+    display: block;
+  }
+
+  .admin-date-chip {
+    display: inline-block;
+    margin-top: 1.25rem;
+  }
+
+  .admin-stat-card {
+    min-height: 152px;
+  }
+
+  .admin-project-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+
+  .admin-project-row__actions {
+    grid-column: 2;
+    justify-content: flex-start;
+  }
+
+  .admin-project-filters > * {
+    flex: 1 1 100%;
+  }
+
+  .admin-message-row {
+    grid-template-columns: 0.45rem minmax(0, 1fr) auto;
+    gap: 0.7rem;
+  }
+
+  .admin-message-row__preview {
+    grid-column: 2 / -1;
+  }
+
+  .admin-message-row__meta {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .admin-message-row__meta .admin-status {
+    display: none;
+  }
+
+  .admin-activity-event header {
+    display: block;
+  }
+
+  .admin-activity-event time {
+    display: block;
+    margin-top: 0.45rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-nav__item {
+    transition: none;
+  }
+}

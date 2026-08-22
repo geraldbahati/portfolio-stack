@@ -30,7 +30,7 @@ const requireAdmin = o.middleware(async ({ context, next }) => {
     throw new ORPCError("FORBIDDEN");
   }
 
-  if (!isAllowedAdminEmail(context.session.user.email)) {
+  if (!isAllowedAdminEmail(context.session.user.email, env.ENVIRONMENT)) {
     throw new ORPCError("FORBIDDEN");
   }
 

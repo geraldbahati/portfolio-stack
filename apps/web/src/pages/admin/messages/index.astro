@@ -1,0 +1,188 @@
+---
+import AdminHeader from "../../../components/admin/AdminHeader.astro";
+import AdminNotice from "../../../components/admin/AdminNotice.astro";
+import AdminLayout from "../../../layouts/AdminLayout.astro";
+import { createServerOrpc } from "../../../lib/data/orpc";
+
+const admin = Astro.locals.admin;
+if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin%2Fmessages", 302);
+
+const search = Astro.url.searchParams.get("q")?.trim().slice(0, 100) ?? "";
+const rawStatus = Astro.url.searchParams.get("status");
+const status =
+  rawStatus === "pending" ||
+  rawStatus === "sent" ||
+  rawStatus === "delivered" ||
+  rawStatus === "failed"
+    ? rawStatus
+    : "all";
+const rawView = Astro.url.searchParams.get("view");
+const view = rawView === "archived" || rawView === "all" ? rawView : "inbox";
+const rawRead = Astro.url.searchParams.get("read");
+const read = rawRead === "read" || rawRead === "unread" ? rawRead : "all";
+const rawPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
+const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+const notice = Astro.url.searchParams.get("notice");
+const error = Astro.url.searchParams.get("error");
+
+const api = createServerOrpc(Astro.request.headers.get("cookie"));
+type MessageList = Awaited<ReturnType<typeof api.admin.messages.list>>;
+let result: MessageList | null = null;
+let dataUnavailable = false;
+
+try {
+  result = await api.admin.messages.list({ search, status, view, read, page, pageSize: 20 });
+} catch {
+  dataUnavailable = true;
+}
+
+const notices: Record<string, string> = {
+  deleted: "The contact submission was permanently deleted.",
+};
+const errors: Record<string, string> = {
+  "not-found": "That message could not be found.",
+  "action-failed": "The message could not be updated. Please try again.",
+};
+
+const dateTimeFormatter = new Intl.DateTimeFormat("en-KE", {
+  day: "2-digit",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+function pageHref(targetPage: number) {
+  const params = new URLSearchParams();
+  if (search) params.set("q", search);
+  if (status !== "all") params.set("status", status);
+  if (view !== "inbox") params.set("view", view);
+  if (read !== "all") params.set("read", read);
+  if (targetPage > 1) params.set("page", String(targetPage));
+  const query = params.toString();
+  return `/admin/messages${query ? `?${query}` : ""}`;
+}
+---
+
+<AdminLayout
+  title="Messages"
+  description="Review and safely retain contact form submissions."
+  user={admin}
+>
+  <AdminHeader
+    eyebrow="Private inbox"
+    title="Messages"
+    description="Review contact submissions, track delivery state, and archive or permanently delete personal data through explicit controls."
+  >
+    <a slot="actions" href="/contact" target="_blank" rel="noopener noreferrer" class="admin-button admin-button--secondary">View contact page</a>
+  </AdminHeader>
+
+  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
+  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+  {dataUnavailable && <AdminNotice kind="error" message="Message data is temporarily unavailable." />}
+
+  {
+    result && (
+      <section class="admin-message-summary" aria-label="Message summary">
+        <a href="/admin/messages">
+          <strong>{result.summary.inbox}</strong><span>Inbox</span>
+        </a>
+        <a href="/admin/messages?read=unread">
+          <strong>{result.summary.unread}</strong><span>Unread</span>
+        </a>
+        <a href="/admin/messages?status=failed">
+          <strong>{result.summary.failed}</strong><span>Failed delivery</span>
+        </a>
+        <a href="/admin/messages?view=archived">
+          <strong>{result.summary.archived}</strong><span>Archived</span>
+        </a>
+      </section>
+    )
+  }
+
+  <form method="get" action="/admin/messages" class="admin-project-filters" role="search">
+    <label class="admin-search-field">
+      <span class="sr-only">Search messages</span>
+      <input name="q" value={search} type="search" maxlength="100" placeholder="Search sender, email, or message" />
+    </label>
+    <label class="admin-filter-field">
+      <span class="sr-only">Inbox view</span>
+      <select name="view">
+        <option value="inbox" selected={view === "inbox"}>Inbox</option>
+        <option value="archived" selected={view === "archived"}>Archived</option>
+        <option value="all" selected={view === "all"}>All messages</option>
+      </select>
+    </label>
+    <label class="admin-filter-field">
+      <span class="sr-only">Read state</span>
+      <select name="read">
+        <option value="all" selected={read === "all"}>Any read state</option>
+        <option value="unread" selected={read === "unread"}>Unread</option>
+        <option value="read" selected={read === "read"}>Read</option>
+      </select>
+    </label>
+    <label class="admin-filter-field">
+      <span class="sr-only">Delivery status</span>
+      <select name="status">
+        <option value="all" selected={status === "all"}>Any delivery state</option>
+        <option value="pending" selected={status === "pending"}>Pending</option>
+        <option value="sent" selected={status === "sent"}>Sent</option>
+        <option value="delivered" selected={status === "delivered"}>Delivered</option>
+        <option value="failed" selected={status === "failed"}>Failed</option>
+      </select>
+    </label>
+    <button type="submit" class="admin-button admin-button--secondary">Apply filters</button>
+    {(search || status !== "all" || view !== "inbox" || read !== "all") && <a href="/admin/messages" class="admin-filter-reset">Reset</a>}
+  </form>
+
+  <section class="admin-project-table" aria-labelledby="message-list-heading">
+    <header class="admin-project-table__header">
+      <div>
+        <h2 id="message-list-heading">Contact submissions</h2>
+        <p>{result?.total ?? 0} {result?.total === 1 ? "message" : "messages"} in this view</p>
+      </div>
+      {result && <span>Page {result.page} of {result.pageCount}</span>}
+    </header>
+
+    {
+      result?.items.length ? (
+        <div class="admin-message-list">
+          {result.items.map((message) => (
+            <a
+              href={`/admin/messages/${encodeURIComponent(message.id)}`}
+              class:list={["admin-message-row", !message.readAt && "is-unread"]}
+            >
+              <span class="admin-message-row__marker" aria-label={message.readAt ? "Read" : "Unread"} />
+              <span class="admin-message-row__sender">
+                <strong>{message.name}</strong>
+                <small>{message.email}</small>
+              </span>
+              <span class="admin-message-row__preview">{message.preview}</span>
+              <span class="admin-message-row__meta">
+                <span class:list={["admin-status", `admin-status--${message.status}`]}>{message.status}</span>
+                <time datetime={new Date(message.createdAt).toISOString()}>{dateTimeFormatter.format(new Date(message.createdAt))}</time>
+              </span>
+            </a>
+          ))}
+        </div>
+      ) : result ? (
+        <div class="admin-project-empty">
+          <span aria-hidden="true">00</span>
+          <h2>{search || status !== "all" || view !== "inbox" || read !== "all" ? "No messages match these filters" : "Your inbox is clear"}</h2>
+          <p>{search || status !== "all" || view !== "inbox" || read !== "all" ? "Try a broader search or reset the filters." : "New contact submissions will appear here."}</p>
+          {(search || status !== "all" || view !== "inbox" || read !== "all") && <a href="/admin/messages" class="admin-button admin-button--secondary">Reset filters</a>}
+        </div>
+      ) : null
+    }
+  </section>
+
+  {
+    result && result.pageCount > 1 && (
+      <nav class="admin-pagination" aria-label="Message pages">
+        {result.page > 1 ? <a href={pageHref(result.page - 1)}>Previous</a> : <span aria-disabled="true">Previous</span>}
+        <strong>{result.page} / {result.pageCount}</strong>
+        {result.page < result.pageCount ? <a href={pageHref(result.page + 1)}>Next</a> : <span aria-disabled="true">Next</span>}
+      </nav>
+    )
+  }
+</AdminLayout>
