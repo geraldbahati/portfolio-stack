@@ -3,9 +3,6 @@ import { describe, expect, it } from "vitest";
 import { describeEnvFailure } from "./validate";
 
 const valid = {
-  DB: {},
-  MEDIA: {},
-  CONTACT_RATE_LIMIT: {},
   BETTER_AUTH_SECRET: "a-secret",
   BETTER_AUTH_URL: "https://portfolio-api.geraldbahati.dev",
   CORS_ORIGIN: "https://www.geraldbahati.dev",
@@ -23,8 +20,8 @@ describe("describeEnvFailure", () => {
     }
   });
 
-  it("reports a binding that was never attached", () => {
-    expect(describeEnvFailure({ ...valid, DB: undefined })).toBe("DB: binding not attached");
+  it("ignores bindings, which are not attached when Workers validates startup", () => {
+    expect(describeEnvFailure({ ...valid, DB: undefined, MEDIA: undefined })).toBeNull();
   });
 
   it("reports a missing secret rather than accepting an empty string", () => {
@@ -45,7 +42,7 @@ describe("describeEnvFailure", () => {
 
   it("collects every problem at once so one deploy surfaces them all", () => {
     const failure = describeEnvFailure({ ENVIRONMENT: "production" });
-    for (const key of ["DB", "MEDIA", "CONTACT_RATE_LIMIT", "BETTER_AUTH_SECRET", "CORS_ORIGIN"]) {
+    for (const key of ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "CORS_ORIGIN"]) {
       expect(failure).toContain(key);
     }
   });
