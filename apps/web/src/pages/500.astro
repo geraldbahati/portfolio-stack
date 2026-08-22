@@ -1,0 +1,27 @@
+---
+import ErrorPage from "../features/error-page/ErrorPage.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { SITE_NAME } from "../lib/seo/site";
+
+// Astro renders this for an unhandled server error and sets the status itself.
+// The thrown error is deliberately not shown: it is already reported to Sentry,
+// and its text can carry internals a visitor should never read.
+---
+
+<SiteLayout
+  title={`Something went wrong | ${SITE_NAME}`}
+  description="This page could not be rendered. Try again, or get in touch."
+  theme="home"
+  indexable={false}
+>
+  <ErrorPage
+    code="500"
+    heading="Something went wrong"
+    message="That request failed on my end. It has been logged — try again in a moment."
+    tagline="Signal lost"
+  />
+</SiteLayout>
+
+<script>
+  import "../features/error-page/boot";
+</script>

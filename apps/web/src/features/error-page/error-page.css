@@ -1,0 +1,195 @@
+/*
+ * The original React version drove every entrance through framer-motion and a
+ * hydrated component tree. Nothing here needs state, so the same choreography
+ * runs as CSS keyframes and the page ships no render-blocking JavaScript.
+ */
+
+.error-page {
+  position: relative;
+  display: flex;
+  min-height: 100svh;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 6rem 1.5rem;
+}
+
+.error-page__grid,
+.error-page__fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.error-page__grid {
+  z-index: 0;
+}
+
+/* Fades the grid out from the centre so the digits stay legible over it. */
+.error-page__fade {
+  z-index: 1;
+  background: radial-gradient(ellipse at center, transparent 0%, var(--color-hero-bg) 70%);
+}
+
+.error-page__content {
+  position: relative;
+  z-index: 2;
+  max-width: 48rem;
+  text-align: center;
+}
+
+.error-page__code {
+  display: flex;
+  justify-content: center;
+  font-size: clamp(6rem, 26vw, 16rem);
+  font-weight: 200;
+  line-height: 0.85;
+  letter-spacing: -0.03em;
+  color: #fff;
+  user-select: none;
+}
+
+.error-page__digit {
+  display: inline-block;
+}
+
+.error-page__digit--pulse {
+  color: var(--color-primary);
+  animation: error-page-pulse 2s ease-in-out infinite;
+}
+
+.error-page__message {
+  margin: 2rem auto 0;
+  max-width: 34rem;
+  font-size: 1.125rem;
+  font-weight: 300;
+  letter-spacing: 0.01em;
+  color: var(--color-muted-foreground);
+}
+
+.error-page__actions {
+  margin-top: 3rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem 2rem;
+}
+
+.error-page__home {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid oklch(1 0 0 / 0.35);
+  padding-bottom: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: #fff;
+  transition: border-color 0.3s ease;
+}
+
+.error-page__home:hover {
+  border-bottom-color: var(--color-primary);
+}
+
+.error-page__arrow {
+  color: var(--color-muted-foreground);
+  transition:
+    transform 0.3s ease,
+    color 0.3s ease;
+}
+
+.error-page__home:hover .error-page__arrow {
+  transform: translateX(-4px);
+  color: var(--color-primary);
+}
+
+.error-page__link {
+  font-size: 0.8125rem;
+  font-weight: 300;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--color-muted-foreground);
+  transition: color 0.3s ease;
+}
+
+.error-page__link:hover {
+  color: #fff;
+}
+
+/* The rules are drawn with pseudo-elements so the markup stays one element. */
+.error-page__tagline {
+  margin-top: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3em;
+  color: oklch(from var(--color-muted-foreground) l c h / 0.6);
+}
+
+.error-page__tagline::before,
+.error-page__tagline::after {
+  content: "";
+  height: 1px;
+  width: 4rem;
+  background: oklch(from var(--color-muted-foreground) l c h / 0.3);
+}
+
+@keyframes error-page-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes error-page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Staggered so the eye lands on the code first. `backwards` keeps each element
+ * hidden through its delay instead of flashing in place before it animates.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  .error-page__code,
+  .error-page__message,
+  .error-page__actions,
+  .error-page__tagline {
+    animation: error-page-enter 0.8s cubic-bezier(0.25, 0.1, 0.25, 1) backwards;
+  }
+
+  .error-page__message {
+    animation-delay: 0.15s;
+  }
+
+  .error-page__actions {
+    animation-delay: 0.3s;
+  }
+
+  .error-page__tagline {
+    animation-delay: 0.45s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .error-page__digit--pulse {
+    animation: none;
+  }
+}

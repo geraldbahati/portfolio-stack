@@ -1,0 +1,73 @@
+---
+import "./error-page.css";
+
+interface Props {
+  /** The status digits, rendered oversized. The middle character pulses. */
+  code: string;
+  /** Carries the accessible name for the heading; the digits alone say nothing. */
+  heading: string;
+  message: string;
+  tagline: string;
+}
+
+const { code, heading, message, tagline } = Astro.props;
+const characters = [...code];
+const pulseIndex = Math.floor(characters.length / 2);
+---
+
+<div class="error-page bg-hero-bg" data-error-page>
+  <div class="error-page__grid" data-grid-pattern-slot aria-hidden="true">
+    <svg class="absolute inset-0 h-full w-full stroke-white/10">
+      <defs>
+        <pattern id="error-page-grid" width="32" height="32" patternUnits="userSpaceOnUse" x="-1" y="-1">
+          <path d="M.5 32V.5H32" fill="none"></path>
+        </pattern>
+      </defs>
+      <rect data-grid-base width="100%" height="100%" stroke-width="0" fill="url(#error-page-grid)"></rect>
+      <g data-grid-highlights></g>
+    </svg>
+  </div>
+  <div class="error-page__fade" aria-hidden="true"></div>
+
+  <div class="error-page__content">
+    <h1 class="error-page__code" aria-label={`${code} — ${heading}`}>
+      {
+        characters.map((character, index) => (
+          <span
+            aria-hidden="true"
+            class:list={["error-page__digit", index === pulseIndex && "error-page__digit--pulse"]}
+          >
+            {character}
+          </span>
+        ))
+      }
+    </h1>
+
+    <p class="error-page__message" data-error-message>{message}</p>
+
+    <div class="error-page__actions">
+      <a class="error-page__home" href="/" data-error-home>
+        <svg
+          class="error-page__arrow"
+          viewBox="0 0 16 16"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M10 13 5 8l5-5"></path>
+        </svg>
+        <span class="error-page__home-label">Back to home</span>
+      </a>
+
+      <a class="error-page__link" href="/projects" data-astro-prefetch="hover">Projects</a>
+      <a class="error-page__link" href="/contact">Contact</a>
+    </div>
+
+    <p class="error-page__tagline"><span>{tagline}</span></p>
+  </div>
+</div>
