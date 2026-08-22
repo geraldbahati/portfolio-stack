@@ -7,7 +7,7 @@ import {
 
 import { orpc } from "../../lib/data/orpc";
 import { bindHoverScramble } from "../../lib/motion/text-scramble";
-import { FORM_SUBMIT, FORM_SUBMITTING } from "./copy";
+import { FORM_SUBMIT, FORM_SUBMITTING, FORM_VERIFICATION_PENDING } from "./copy";
 import { FAIL_FALLBACK, readContactForm, validateContactForm } from "./form-state";
 
 function prefersReducedMotion() {
@@ -54,10 +54,32 @@ function bindChannels(root: HTMLElement) {
 }
 
 type TurnstileApi = {
-  render: (el: HTMLElement, options: { sitekey: string; appearance: string }) => string;
+  render: (
+    el: HTMLElement,
+    options: {
+      sitekey: string;
+      appearance: string;
+      callback: (token: string) => void;
+      "expired-callback": () => void;
+      "error-callback": () => void;
+    },
+  ) => string;
   getResponse: (id: string) => string;
   reset: (id: string) => void;
 };
+
+type TurnstileHandle = {
+  /** Resolves once the widget has produced a token, or `undefined` if it cannot. */
+  getToken: () => Promise<string | undefined>;
+  reset: () => void;
+};
+
+/**
+ * How long to wait for a token before giving up. Turnstile normally solves in
+ * well under a second; this only matters on a slow connection or when the
+ * visitor is shown an interactive challenge.
+ */
+const TURNSTILE_TOKEN_TIMEOUT_MS = 10_000;
 
 function loadTurnstile(slot: HTMLElement) {
   const sitekey = slot.dataset.sitekey;
@@ -65,15 +87,66 @@ function loadTurnstile(slot: HTMLElement) {
     return Promise.resolve(null);
   }
 
-  return new Promise<{ widgetId: string; api: TurnstileApi } | null>((resolve) => {
+  return new Promise<TurnstileHandle | null>((resolve) => {
     const ready = () => {
       const api = (window as Window & { turnstile?: TurnstileApi }).turnstile;
       if (!api) {
         resolve(null);
         return;
       }
-      const widgetId = api.render(slot, { sitekey, appearance: "interaction-only" });
-      resolve({ widgetId, api });
+
+      // `render` returns as soon as the widget exists; the token arrives later
+      // through this callback. Waiting on `render` alone meant a visitor who
+      // submitted before the challenge resolved sent no token and was rejected
+      // as invalid.
+      let token: string | undefined;
+      let waiting: ((value: string | undefined) => void)[] = [];
+
+      const deliver = (value: string | undefined) => {
+        token = value;
+        const pending = waiting;
+        waiting = [];
+        for (const resolveWaiter of pending) resolveWaiter(value);
+      };
+
+      const widgetId = api.render(slot, {
+        sitekey,
+        appearance: "interaction-only",
+        callback: (value) => deliver(value),
+        // An expired token is no longer accepted, so drop it and let the next
+        // request wait for a fresh one.
+        "expired-callback": () => {
+          token = undefined;
+        },
+        "error-callback": () => deliver(undefined),
+      });
+
+      const getToken = () => {
+        const settled = token || api.getResponse(widgetId);
+        if (settled) return Promise.resolve(settled);
+
+        return new Promise<string | undefined>((resolveToken) => {
+          const timer = setTimeout(() => {
+            waiting = waiting.filter((entry) => entry !== onSettled);
+            resolveToken(api.getResponse(widgetId) || undefined);
+          }, TURNSTILE_TOKEN_TIMEOUT_MS);
+
+          const onSettled = (value: string | undefined) => {
+            clearTimeout(timer);
+            resolveToken(value);
+          };
+
+          waiting.push(onSettled);
+        });
+      };
+
+      resolve({
+        getToken,
+        reset: () => {
+          token = undefined;
+          api.reset(widgetId);
+        },
+      });
     };
 
     if ((window as Window & { turnstile?: TurnstileApi }).turnstile) {
@@ -103,7 +176,7 @@ function bindForm(root: HTMLElement) {
 
   let started = false;
   let startedAt = 0;
-  let turnstile: { widgetId: string; api: TurnstileApi } | null = null;
+  let turnstile: TurnstileHandle | null = null;
   let turnstilePromise: Promise<unknown> | null = null;
 
   const setBusy = (busy: boolean) => {
@@ -193,17 +266,27 @@ function bindForm(root: HTMLElement) {
     }
 
     const elapsedMs = startedAt ? Date.now() - startedAt : undefined;
+    const turnstileToken = turnstile ? await turnstile.getToken() : undefined;
+
+    // Submitting without a token when the widget is present is a guaranteed
+    // rejection, and "Invalid submission detected" reads like the visitor did
+    // something wrong. Ask them to retry instead.
+    if (turnstile && !turnstileToken) {
+      setBusy(false);
+      setStatus("error", FORM_VERIFICATION_PENDING);
+      return;
+    }
 
     try {
       const result = await orpc.contact.submit({
         ...parsed.data,
-        turnstileToken: turnstile?.api.getResponse(turnstile.widgetId) || undefined,
+        turnstileToken,
       });
 
       if (result.ok) {
         setStatus("success", result.message);
         form.reset();
-        turnstile?.api.reset(turnstile.widgetId);
+        turnstile?.reset();
         trackContactFormSubmitted({
           outcome: "success",
           message_length: parsed.data.message.length,

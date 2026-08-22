@@ -27,6 +27,8 @@ export const FORM_PRIVACY_AFTER =
   "and consent to my details being used to review and reply to this message.";
 export const FORM_SUBMIT = "SEND MESSAGE";
 export const FORM_SUBMITTING = "SENDING...";
+export const FORM_VERIFICATION_PENDING =
+  "Still verifying your browser. Please try again in a moment.";
 export const FORM_ARIA = "Project inquiry contact form";
 
 export const GREETINGS = [
