@@ -1,98 +1,121 @@
 # portfolio-stack
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Astro, Hono, ORPC, and more.
+The source for [www.geraldbahati.dev](https://www.geraldbahati.dev) — a portfolio and case-study site, plus the admin dashboard that edits it.
 
-## Features
+Everything runs on Cloudflare: two Workers, a D1 database, an R2 bucket, KV, Images, and Stream. There is no origin server and no container.
 
-- **TypeScript** - For type safety and improved developer experience
-- **Astro** - The web framework for content-driven websites
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Hono** - Lightweight, performant server framework
-- **oRPC** - End-to-end type-safe APIs with OpenAPI integration
-- **workers** - Runtime environment
-- **Drizzle** - TypeScript-first ORM
-- **Cloudflare D1** - Database engine
-- **Authentication** - Better-Auth
-- **Turborepo** - Optimized monorepo build system
+## Architecture
 
-## Getting Started
+Two Workers own separate concerns and are deployed together.
 
-First, install the dependencies:
+```
+                      ┌──────────────────────────────┐
+  visitor ──────────► │  web Worker (Astro, SSR)     │
+                      │  www.geraldbahati.dev        │
+                      └──────────────┬───────────────┘
+                                     │ oRPC over HTTP
+                      ┌──────────────▼───────────────┐
+                      │  API Worker (Hono + oRPC)    │
+                      │  portfolio-api.…dev          │
+                      └──────┬───────────────┬───────┘
+                             │               │
+                      ┌──────▼─────┐   ┌─────▼──────┐
+                      │  D1 (SQL)  │   │  R2 media  │
+                      └────────────┘   └────────────┘
+```
+
+The web Worker renders every page server-side and never talks to the database
+directly — all data crosses the oRPC boundary, so the API stays the single
+place where authorisation is enforced. Admin routes are gated in Astro
+middleware *before* rendering, and every admin procedure re-checks the
+allowlist independently rather than trusting that the page guard ran.
+
+Media is not migrated or proxied: images live in R2 behind
+`media.geraldbahati.dev` and videos in Cloudflare Stream, both referenced by
+absolute URL.
+
+## Stack
+
+| Concern | Choice |
+| --- | --- |
+| Web | Astro (SSR) on Cloudflare Workers |
+| API | Hono + oRPC |
+| Database | Cloudflare D1 with Drizzle |
+| Auth | Better Auth, allowlisted admin |
+| Media | R2, Cloudflare Images, Cloudflare Stream |
+| Email | Resend, with signed delivery webhooks |
+| Infrastructure | Alchemy (TypeScript, not YAML) |
+| Monorepo | Turborepo + Bun workspaces |
+| Tests | Vitest (unit), Playwright (end to end) |
+| Observability | Sentry, PostHog (consent-gated) |
+
+## Layout
+
+```
+apps/
+  web/         Astro site: public pages, case studies, admin dashboard
+  server/      Hono API Worker: oRPC routers, webhooks, media upload
+packages/
+  api/         oRPC routers and request/response schemas
+  auth/        Better Auth setup and the admin allowlist
+  db/          Drizzle schema, migrations, seeds
+  media/       R2 helpers and upload validation
+  analytics/   PostHog and Sentry configuration
+  env/         Validated environment access
+  infra/       Alchemy stack definition
+  config/      Shared TypeScript and tooling config
+```
+
+## Getting started
+
+Requires [Bun](https://bun.sh).
 
 ```bash
 bun install
 ```
 
-## Database Setup
-
-This project uses Cloudflare D1 (SQLite) with Drizzle ORM.
-
-Runtime database access uses the Cloudflare `DB` binding from `packages/infra/alchemy.run.ts`. If a local `DATABASE_URL` is present, it is only for database tooling.
-
-Alchemy provisions the D1 database and applies migrations during `deploy`.
-
-1. Generate migration files:
-
-```bash
-bun run db:generate
-```
-
-Then, run the development server:
+Copy each `.env.example` to `.env` and fill it in — `apps/server/.env` for
+runtime credentials and `apps/web/.env` for public build values. Then:
 
 ```bash
 bun run dev
 ```
 
-Open [http://localhost:4321](http://localhost:4321) in your browser to see the web application.
-The API is running at [http://localhost:3000](http://localhost:3000).
+This starts both Workers locally through Alchemy, with D1, R2, and KV emulated
+on disk. The site is on `http://localhost:4321` and the API on `http://localhost:3000`.
 
-## Deployment
-
-### Alchemy
-
-- Target: web on Cloudflare + server on Cloudflare
-- Configure provider login: `cd packages/infra && bunx alchemy login --configure`
-- Dev: bun run dev
-- Production verification: `bun run release:check`
-- Production deploy: `bun run deploy:production`
-- Destroy: bun run destroy
-
-`alchemy login --configure` stores the selected Cloudflare, Neon, PlanetScale, and/or Prisma provider profiles under `~/.alchemy`; no provider-specific setup command is required by this scaffold.
-
-Deploys are staged and default to a personal `dev_<username>` stage. The production command runs the secret-safe environment preflight first and then targets the explicit `production` stage:
+## Commands
 
 ```bash
+bun run check              # lint, typecheck, unit tests
+bun run test               # unit tests only
+bun run test:e2e           # Playwright, starts its own dev server
+bun run db:generate        # generate a migration from schema changes
+bun run preflight:production   # audit production config (prints no secrets)
+bun run release:check      # every gate, in order — run before deploying
+```
+
+## Deploying
+
+Read [the production runbook](docs/production-readiness.md) first; it covers
+the release order, the D1 recovery point, and the checks that follow a deploy.
+
+```bash
+bun run release:check
 bun run deploy:production
 ```
 
-Follow the complete recovery, migration, smoke-test, and rollback procedure in [the production runbook](docs/production-readiness.md).
-Sentry and PostHog configuration and verification are documented in [the observability guide](docs/observability.md).
+Alchemy applies pending migrations from `packages/db/src/migrations` as part of
+the deploy. Do not run a separate migration command.
 
-### Production origins
+## Documentation
 
-- Before the first production deploy, set `CORS_ORIGIN` to the exact canonical HTTPS web origin. Wildcards, paths, HTTP origins, and redirect-only hostnames fail the production preflight.
+- [Production runbook](docs/production-readiness.md) — release procedure, configuration, rollback
+- [Code structure](docs/code-structure.md) — how the packages fit together and why
+- [Admin architecture](docs/admin-architecture.md) — the dashboard's boundaries and data flow
+- [Observability](docs/observability.md) — Sentry, PostHog, and consent behaviour
 
-## Project Structure
+## License
 
-```
-portfolio-stack/
-├── apps/
-│   ├── web/         # Frontend application (Astro)
-│   └── server/      # Backend API (Hono, ORPC)
-├── packages/
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
-```
-
-## Available Scripts
-
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run dev:server`: Start only the server
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run release:check`: Run the complete local production gate
-- `bun run preflight:production`: Validate production configuration without printing secrets
-- `bun run verify:deployment -- <web-url> <api-url>`: Run read-only production smoke checks
-- `bun run db:generate`: Generate database client/types
+See [LICENSE](LICENSE). The written case studies, photography, and the GB mark
+are not covered by it and remain all rights reserved.
