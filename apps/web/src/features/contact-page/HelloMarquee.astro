@@ -2,15 +2,19 @@
 import { GREETINGS } from "./copy";
 
 const loop = [...GREETINGS, ...GREETINGS];
+const durationSeconds = Math.round((40 * GREETINGS.length) / 12);
 ---
 
 <div
   data-hello-marquee
   class="hello-marquee"
   aria-hidden="true"
+  style={`--hello-marquee-duration: ${durationSeconds}s`}
 >
   <div class="hello-marquee__static">
     <span lang="en">Hello</span>
+    <span class="hello-marquee__mark">■</span>
+    <span lang="sw">Habari</span>
     <span class="hello-marquee__mark">■</span>
     <span lang="ja">こんにちは</span>
     <span class="hello-marquee__mark">■</span>

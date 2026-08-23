@@ -10,6 +10,8 @@ describe("contact page copy", () => {
     expect(WHATSAPP_HREF).toBe("https://wa.me/254704713070");
     expect(GREETINGS.map((item) => item.lang)).toContain("ja");
     expect(GREETINGS.map((item) => item.lang)).toContain("ar");
+    expect(GREETINGS).toContainEqual({ id: "sw", text: "Habari", lang: "sw", dir: "ltr" });
+    expect(GREETINGS.map((item) => item.lang)).toEqual(expect.arrayContaining(["so", "am", "pt"]));
   });
 });
 

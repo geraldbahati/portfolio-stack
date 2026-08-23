@@ -10,7 +10,7 @@
 .hello-marquee__track {
   display: flex;
   width: max-content;
-  animation: hello-marquee 40s linear infinite;
+  animation: hello-marquee var(--hello-marquee-duration, 40s) linear infinite;
   animation-play-state: paused;
 }
 

@@ -33,15 +33,19 @@ export const FORM_ARIA = "Project inquiry contact form";
 
 export const GREETINGS = [
   { id: "en-1", text: "Hello", lang: "en", dir: "ltr" },
+  { id: "sw", text: "Habari", lang: "sw", dir: "ltr" },
   { id: "ja", text: "こんにちは", lang: "ja", dir: "ltr" },
   { id: "ar", text: "مرحبًا", lang: "ar", dir: "rtl" },
   { id: "en-2", text: "Hello", lang: "en", dir: "ltr" },
+  { id: "so", text: "Salaan", lang: "so", dir: "ltr" },
+  { id: "am", text: "ሰላም", lang: "am", dir: "ltr" },
   { id: "es", text: "Hola", lang: "es", dir: "ltr" },
   { id: "fr", text: "Bonjour", lang: "fr", dir: "ltr" },
   { id: "en-3", text: "Hello", lang: "en", dir: "ltr" },
   { id: "zh", text: "你好", lang: "zh", dir: "ltr" },
   { id: "de", text: "Hallo", lang: "de", dir: "ltr" },
   { id: "en-4", text: "Hello", lang: "en", dir: "ltr" },
+  { id: "pt", text: "Olá", lang: "pt", dir: "ltr" },
   { id: "it", text: "Ciao", lang: "it", dir: "ltr" },
   { id: "ko", text: "안녕하세요", lang: "ko", dir: "ltr" },
 ] as const;
