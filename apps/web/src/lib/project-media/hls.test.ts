@@ -14,6 +14,7 @@ vi.mock("hls.js", () => {
     static Events = {
       ERROR: "error",
       MANIFEST_PARSED: "manifestParsed",
+      MEDIA_ATTACHED: "mediaAttached",
     };
 
     static isSupported() {
@@ -38,7 +39,7 @@ afterEach(() => {
 });
 
 describe("project HLS initialization", () => {
-  it("leaves fragment loading under the visibility controller", async () => {
+  it("starts loading after the media element is attached", async () => {
     vi.stubGlobal("window", {
       matchMedia: vi.fn(() => ({ matches: false })),
     });
@@ -50,11 +51,18 @@ describe("project HLS initialization", () => {
 
     expect(hlsMocks.construct).toHaveBeenCalledWith(
       expect.objectContaining({
-        autoStartLoad: false,
+        autoStartLoad: true,
         enableWorker: true,
       }),
     );
-    expect(hlsMocks.loadSource).toHaveBeenCalledWith("https://example.com/video.m3u8");
+    expect(hlsMocks.loadSource).not.toHaveBeenCalled();
     expect(hlsMocks.attachMedia).toHaveBeenCalledWith(video);
+
+    const mediaAttachedHandler = hlsMocks.on.mock.calls.find(
+      ([event]) => event === "mediaAttached",
+    )?.[1];
+    mediaAttachedHandler?.();
+
+    expect(hlsMocks.loadSource).toHaveBeenCalledWith("https://example.com/video.m3u8");
   });
 });

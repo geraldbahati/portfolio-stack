@@ -29,6 +29,7 @@ const lcpImage = media ? projectPosterPreload(media) : null;
   keywords={PAGE_COPY.projects.keywords}
   jsonLd={projectsIndexJsonLd(projects)}
   lcpImage={lcpImage ?? undefined}
+  preconnectStream
   ogImage={media?.posterSrc ?? undefined}
   ogImageAlt={first ? `${first.title} — case study preview` : undefined}
 >

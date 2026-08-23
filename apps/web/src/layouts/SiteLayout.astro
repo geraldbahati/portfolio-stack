@@ -35,6 +35,7 @@ interface Props {
   description?: string;
   theme?: "home" | "page";
   lcpImage?: ImagePreload;
+  preconnectStream?: boolean;
   ogImage?: string;
   ogImageAlt?: string;
   ogType?: "website" | "article" | "profile";
@@ -52,6 +53,7 @@ const {
   description = SITE_DESCRIPTION,
   theme = "page",
   lcpImage,
+  preconnectStream = false,
   ogImage,
   ogImageAlt,
   ogType = "website",
@@ -167,6 +169,7 @@ const socialProfiles = socialLinks
     <link rel="preconnect" href={PUBLIC_MEDIA_ORIGIN} />
     <link rel="dns-prefetch" href={PUBLIC_MEDIA_ORIGIN} />
     <link rel="dns-prefetch" href={streamOrigin} />
+    {preconnectStream && <link rel="preconnect" href={streamOrigin} crossorigin />}
     {
       lcpImage ? (
         <link
