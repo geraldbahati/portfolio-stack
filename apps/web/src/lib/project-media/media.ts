@@ -4,7 +4,6 @@ import { initHls } from "./hls";
 import { byVisibility, nextVisible, shouldAutoplay, shouldShowPoster } from "./media-state";
 
 type CardPlayer = {
-  id: string;
   card: HTMLElement;
   video: HTMLVideoElement;
   poster: HTMLElement | null;
@@ -14,26 +13,28 @@ type CardPlayer = {
   visible: boolean;
   ratio: number;
   playing: boolean;
+  resumeFrame: number;
 };
 
 const FREEZE = true;
 
-function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export function bindProjectMedia(root: HTMLElement) {
   const players = new Map<HTMLElement, CardPlayer>();
   const playbackSource = root.querySelector("[data-projects-scroll-root]") ?? root;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const events = new AbortController();
   let playbackEnabled = playbackSource.getAttribute("data-playback") !== "off";
   let activating = false;
+  let destroyed = false;
+  let drainFrame = 0;
   const pending: CardPlayer[] = [];
 
   const syncPlayer = (player: CardPlayer) => {
     const playing = shouldAutoplay({
       visible: player.visible,
+      pageVisible: !document.hidden,
       playbackEnabled,
-      reducedMotion: prefersReducedMotion(),
+      reducedMotion: reducedMotion.matches,
     });
     const showPoster = shouldShowPoster({
       activated: player.activated,
@@ -77,7 +78,13 @@ export function bindProjectMedia(root: HTMLElement) {
   };
 
   const activate = async (player: CardPlayer) => {
-    if (player.activated || prefersReducedMotion() || !player.visible) {
+    if (
+      destroyed ||
+      player.activated ||
+      reducedMotion.matches ||
+      document.hidden ||
+      !player.visible
+    ) {
       return;
     }
 
@@ -91,25 +98,37 @@ export function bindProjectMedia(root: HTMLElement) {
     syncPlayer(player);
 
     try {
-      player.hls = await initHls(
+      const hls = await initHls(
         player.video,
         src,
         () => {
+          if (destroyed) {
+            return;
+          }
           player.loaded = true;
           syncPlayer(player);
         },
         () => {
-          player.card.dataset.mediaError = "true";
+          if (!destroyed) {
+            player.card.dataset.mediaError = "true";
+          }
         },
       );
+      if (destroyed) {
+        hls?.destroy();
+        return;
+      }
+      player.hls = hls;
       syncPlayer(player);
     } catch {
-      player.card.dataset.mediaError = "true";
+      if (!destroyed) {
+        player.card.dataset.mediaError = "true";
+      }
     }
   };
 
   const drain = () => {
-    if (activating || prefersReducedMotion()) {
+    if (destroyed || activating || reducedMotion.matches || document.hidden) {
       return;
     }
 
@@ -121,14 +140,17 @@ export function bindProjectMedia(root: HTMLElement) {
     activating = true;
     void activate(next).finally(() => {
       activating = false;
-      if (pending.length > 0) {
-        requestAnimationFrame(drain);
+      if (!destroyed && pending.length > 0) {
+        drainFrame = requestAnimationFrame(() => {
+          drainFrame = 0;
+          drain();
+        });
       }
     });
   };
 
   const enqueueVisible = () => {
-    if (!playbackEnabled || prefersReducedMotion()) {
+    if (destroyed || !playbackEnabled || reducedMotion.matches || document.hidden) {
       return;
     }
 
@@ -150,7 +172,6 @@ export function bindProjectMedia(root: HTMLElement) {
 
     video.disableRemotePlayback = true;
     const player: CardPlayer = {
-      id: card.dataset.projectId ?? "",
       card,
       video,
       poster: card.querySelector("[data-project-poster]"),
@@ -160,17 +181,23 @@ export function bindProjectMedia(root: HTMLElement) {
       visible: false,
       ratio: 0,
       playing: false,
+      resumeFrame: 0,
     };
-    video.addEventListener("pause", () => {
-      if (!player.playing || document.hidden) {
-        return;
-      }
-      requestAnimationFrame(() => {
-        if (player.playing && player.video.paused) {
-          void player.video.play().catch(() => undefined);
+    video.addEventListener(
+      "pause",
+      () => {
+        if (destroyed || !player.playing || document.hidden || player.resumeFrame !== 0) {
+          return;
         }
-      });
-    });
+        player.resumeFrame = requestAnimationFrame(() => {
+          player.resumeFrame = 0;
+          if (!destroyed && player.playing && player.video.paused) {
+            void player.video.play().catch(() => undefined);
+          }
+        });
+      },
+      { signal: events.signal },
+    );
     players.set(card, player);
   }
 
@@ -207,8 +234,22 @@ export function bindProjectMedia(root: HTMLElement) {
     visibility.observe(card);
   }
 
+  const syncEnvironment = () => {
+    if (document.hidden || reducedMotion.matches) {
+      pending.length = 0;
+    }
+    syncAll();
+    enqueueVisible();
+  };
+
+  document.addEventListener("visibilitychange", syncEnvironment, { signal: events.signal });
+  reducedMotion.addEventListener("change", syncEnvironment, { signal: events.signal });
+
   return {
     setPlaybackEnabled(enabled: boolean) {
+      if (destroyed) {
+        return;
+      }
       playbackEnabled = enabled;
       if (!enabled) {
         pending.length = 0;
@@ -217,10 +258,21 @@ export function bindProjectMedia(root: HTMLElement) {
       enqueueVisible();
     },
     destroy() {
+      if (destroyed) {
+        return;
+      }
+      destroyed = true;
+      events.abort();
       visibility.disconnect();
       pending.length = 0;
+      if (drainFrame !== 0) {
+        cancelAnimationFrame(drainFrame);
+      }
       for (const player of players.values()) {
         player.playing = false;
+        if (player.resumeFrame !== 0) {
+          cancelAnimationFrame(player.resumeFrame);
+        }
         player.video.pause();
         player.hls?.destroy();
       }

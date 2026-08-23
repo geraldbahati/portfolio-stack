@@ -95,7 +95,7 @@ const badges = showBadges ? (project.badges ?? []) : [];
             height={height}
             loading={priority ? "eager" : "lazy"}
             fetchpriority={priority ? "high" : undefined}
-            decoding="async"
+            decoding={priority ? "sync" : "async"}
             data-image-component={import.meta.env.DEV ? "true" : undefined}
           />
         </picture>

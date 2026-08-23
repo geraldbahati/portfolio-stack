@@ -5,13 +5,20 @@ import { withPublicCache } from "./public-cache";
 
 const PROJECTS_FETCH_MS = 4000;
 
-function withTimeout<T>(promise: Promise<T>, message: string) {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error(message)), PROJECTS_FETCH_MS);
-    }),
-  ]);
+async function withTimeout<T>(promise: Promise<T>, message: string) {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(message)), PROJECTS_FETCH_MS);
+      }),
+    ]);
+  } finally {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+    }
+  }
 }
 
 export async function loadPublishedProjects(): Promise<PublishedProject[]> {

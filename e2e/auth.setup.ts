@@ -45,10 +45,22 @@ setup("authenticate the isolated admin account", async ({ page, request }) => {
   await mkdir(path.dirname(ADMIN_AUTH_FILE), { recursive: true });
   await page.context().storageState({ path: ADMIN_AUTH_FILE });
 
-  // Alchemy reports the port ready before Vite finishes optimizing dependencies,
-  // and the reloads that follow abort in-flight requests. Vite reloads more than
-  // once on a cold cache, so one clean load is not proof it has settled.
-  let consecutiveCleanLoads = 0;
+  // Alchemy reports the port ready before Vite has compiled the module graph.
+  // Vite reloads the program whenever it meets a module it has not transformed
+  // yet, and a reload aborts every request in flight — which is what produced
+  // the intermittent 502s and "failed to fetch dynamically imported module"
+  // errors. Walking each route here forces that compilation to happen before
+  // the browser projects start, so nothing is left to discover mid-suite.
+  const routesToWarm = [
+    "/",
+    "/projects",
+    "/contact",
+    "/privacy",
+    "/imprint",
+    "/definitely-not-a-real-route",
+  ];
+
+  let consecutiveCleanPasses = 0;
   await expect
     .poll(
       async () => {
@@ -59,20 +71,23 @@ setup("authenticate the isolated admin account", async ({ page, request }) => {
 
         page.on("response", recordFailure);
         try {
-          await page.goto("/", { waitUntil: "load" });
-          // Matched by level, not name: the heading text is marketing copy and
-          // this only needs to know the page rendered.
-          await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+          for (const route of routesToWarm) {
+            await page.goto(route, { waitUntil: "load" });
+            // Matched by level, not name: the copy is marketing text and this
+            // only needs to know the page rendered.
+            await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+          }
         } finally {
           page.off("response", recordFailure);
         }
 
-        consecutiveCleanLoads = upstreamFailures.length === 0 ? consecutiveCleanLoads + 1 : 0;
-        return consecutiveCleanLoads;
+        // One clean sweep can still be followed by a reload, so require two.
+        consecutiveCleanPasses = upstreamFailures.length === 0 ? consecutiveCleanPasses + 1 : 0;
+        return consecutiveCleanPasses;
       },
       {
         message: "the local dev server should settle before the browser projects run",
-        timeout: 60_000,
+        timeout: 120_000,
       },
     )
     .toBeGreaterThanOrEqual(2);

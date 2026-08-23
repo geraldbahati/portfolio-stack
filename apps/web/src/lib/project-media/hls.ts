@@ -22,6 +22,7 @@ export async function initHls(
 
   const hls = new HlsCtor({
     enableWorker: true,
+    autoStartLoad: false,
     lowLatencyMode: false,
     capLevelToPlayerSize: true,
     startLevel: 0,

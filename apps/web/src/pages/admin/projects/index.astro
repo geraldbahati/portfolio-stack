@@ -1,17 +1,25 @@
 ---
+import * as Sentry from "@sentry/astro";
 import AdminHeader from "../../../components/admin/AdminHeader.astro";
 import AdminNotice from "../../../components/admin/AdminNotice.astro";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
+import {
+  ADMIN_PROJECT_ERRORS,
+  ADMIN_PROJECT_NOTICES,
+  ADMIN_PROJECT_PAGE_SIZE,
+  adminProjectPageHref,
+  formatAdminProjectDate,
+  hasActiveAdminProjectFilters,
+  parseAdminProjectListQuery,
+} from "../../../lib/admin/project-list";
 import { createServerOrpc } from "../../../lib/data/orpc";
 
 const admin = Astro.locals.admin;
 if (!admin) return Astro.redirect("/login?returnTo=%2Fadmin%2Fprojects", 302);
 
-const search = Astro.url.searchParams.get("q")?.trim().slice(0, 100) ?? "";
-const rawStatus = Astro.url.searchParams.get("status");
-const status = rawStatus === "published" || rawStatus === "draft" ? rawStatus : "all";
-const rawPage = Number.parseInt(Astro.url.searchParams.get("page") ?? "1", 10);
-const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+const query = parseAdminProjectListQuery(Astro.url.searchParams);
+const { search, status, page } = query;
+const hasActiveFilters = hasActiveAdminProjectFilters(query);
 const notice = Astro.url.searchParams.get("notice");
 const error = Astro.url.searchParams.get("error");
 
@@ -21,35 +29,17 @@ let result: ProjectList | null = null;
 let dataUnavailable = false;
 
 try {
-  result = await api.admin.projects.list({ search, status, page, pageSize: 20 });
-} catch {
+  result = await api.admin.projects.list({
+    search,
+    status,
+    page,
+    pageSize: ADMIN_PROJECT_PAGE_SIZE,
+  });
+} catch (cause) {
+  Sentry.captureException(cause, {
+    tags: { adminPage: "projects" },
+  });
   dataUnavailable = true;
-}
-
-const notices: Record<string, string> = {
-  created: "Project draft created successfully.",
-  saved: "Project changes saved.",
-  published: "Project published successfully.",
-  unpublished: "Project unpublished successfully.",
-};
-const errors: Record<string, string> = {
-  "not-found": "That project could not be found.",
-  "save-failed": "The project could not be saved. Please try again.",
-};
-
-const dateFormatter = new Intl.DateTimeFormat("en-KE", {
-  day: "2-digit",
-  month: "short",
-  year: "numeric",
-});
-
-function pageHref(targetPage: number) {
-  const params = new URLSearchParams();
-  if (search) params.set("q", search);
-  if (status !== "all") params.set("status", status);
-  if (targetPage > 1) params.set("page", String(targetPage));
-  const query = params.toString();
-  return `/admin/projects${query ? `?${query}` : ""}`;
 }
 ---
 
@@ -66,8 +56,8 @@ function pageHref(targetPage: number) {
     <a slot="actions" href="/admin/projects/new" class="admin-button admin-button--primary">New project</a>
   </AdminHeader>
 
-  {notice && notices[notice] && <AdminNotice kind="success" message={notices[notice]} />}
-  {error && errors[error] && <AdminNotice kind="error" message={errors[error]} />}
+  {notice && ADMIN_PROJECT_NOTICES[notice] && <AdminNotice kind="success" message={ADMIN_PROJECT_NOTICES[notice]} />}
+  {error && ADMIN_PROJECT_ERRORS[error] && <AdminNotice kind="error" message={ADMIN_PROJECT_ERRORS[error]} />}
   {dataUnavailable && <AdminNotice kind="error" message="Project data is temporarily unavailable." />}
 
   <form method="get" action="/admin/projects" class="admin-project-filters" role="search">
@@ -84,7 +74,7 @@ function pageHref(targetPage: number) {
       </select>
     </label>
     <button type="submit" class="admin-button admin-button--secondary">Apply filters</button>
-    {(search || status !== "all") && <a href="/admin/projects" class="admin-filter-reset">Reset</a>}
+    {hasActiveFilters && <a href="/admin/projects" class="admin-filter-reset">Reset</a>}
   </form>
 
   <section class="admin-project-table" aria-labelledby="project-list-heading">
@@ -115,7 +105,7 @@ function pageHref(targetPage: number) {
                 <div class="admin-project-row__meta">
                   <span>/{project.id}</span>
                   <span>{project.type}</span>
-                  <span>Updated {dateFormatter.format(new Date(project.updatedAt))}</span>
+                  <span>Updated {formatAdminProjectDate(project.updatedAt)}</span>
                 </div>
               </div>
               <div class="admin-project-row__actions">
@@ -129,9 +119,9 @@ function pageHref(targetPage: number) {
       ) : result ? (
         <div class="admin-project-empty">
           <span aria-hidden="true">00</span>
-          <h2>{search || status !== "all" ? "No projects match these filters" : "No projects yet"}</h2>
-          <p>{search || status !== "all" ? "Try a broader search or reset the filters." : "Create the first project draft to begin."}</p>
-          {search || status !== "all" ? (
+          <h2>{hasActiveFilters ? "No projects match these filters" : "No projects yet"}</h2>
+          <p>{hasActiveFilters ? "Try a broader search or reset the filters." : "Create the first project draft to begin."}</p>
+          {hasActiveFilters ? (
             <a href="/admin/projects" class="admin-button admin-button--secondary">Reset filters</a>
           ) : (
             <a href="/admin/projects/new" class="admin-button admin-button--primary">Create project</a>
@@ -144,9 +134,9 @@ function pageHref(targetPage: number) {
   {
     result && result.pageCount > 1 && (
       <nav class="admin-pagination" aria-label="Project pages">
-        {result.page > 1 ? <a href={pageHref(result.page - 1)}>Previous</a> : <span aria-disabled="true">Previous</span>}
+        {result.page > 1 ? <a href={adminProjectPageHref(query, result.page - 1)}>Previous</a> : <span aria-disabled="true">Previous</span>}
         <strong>{result.page} / {result.pageCount}</strong>
-        {result.page < result.pageCount ? <a href={pageHref(result.page + 1)}>Next</a> : <span aria-disabled="true">Next</span>}
+        {result.page < result.pageCount ? <a href={adminProjectPageHref(query, result.page + 1)}>Next</a> : <span aria-disabled="true">Next</span>}
       </nav>
     )
   }

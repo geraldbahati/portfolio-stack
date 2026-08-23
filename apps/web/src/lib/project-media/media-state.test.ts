@@ -7,6 +7,7 @@ describe("project media gates", () => {
     expect(
       shouldAutoplay({
         visible: true,
+        pageVisible: true,
         playbackEnabled: true,
         reducedMotion: false,
       }),
@@ -14,6 +15,7 @@ describe("project media gates", () => {
     expect(
       shouldAutoplay({
         visible: false,
+        pageVisible: true,
         playbackEnabled: true,
         reducedMotion: false,
       }),
@@ -21,8 +23,25 @@ describe("project media gates", () => {
     expect(
       shouldAutoplay({
         visible: true,
+        pageVisible: true,
         playbackEnabled: false,
         reducedMotion: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoplay({
+        visible: true,
+        pageVisible: false,
+        playbackEnabled: true,
+        reducedMotion: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldAutoplay({
+        visible: true,
+        pageVisible: true,
+        playbackEnabled: true,
+        reducedMotion: true,
       }),
     ).toBe(false);
   });

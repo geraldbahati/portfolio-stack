@@ -1,5 +1,6 @@
 export type PlaybackGate = {
   visible: boolean;
+  pageVisible: boolean;
   playbackEnabled: boolean;
   reducedMotion: boolean;
 };
@@ -12,7 +13,7 @@ export function nextVisible(currentlyVisible: boolean, ratio: number) {
 }
 
 export function shouldAutoplay(gate: PlaybackGate) {
-  return gate.visible && gate.playbackEnabled && !gate.reducedMotion;
+  return gate.visible && gate.pageVisible && gate.playbackEnabled && !gate.reducedMotion;
 }
 
 export function shouldShowPoster(options: {

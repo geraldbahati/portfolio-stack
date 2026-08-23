@@ -97,6 +97,25 @@ export default defineConfig({
   },
   vite: {
     cacheDir: isE2e ? "node_modules/.vite-e2e" : "node_modules/.vite",
+    // Vite's startup scan misses these: each is reached either through a
+    // dynamic import or through a workspace package it treats as source, so
+    // they are only discovered once a browser actually requests the module.
+    // Discovering a dependency mid-session triggers a re-optimize and a
+    // program reload, which aborts every request already in flight — the
+    // 502s and "failed to fetch dynamically imported module" errors that made
+    // the end-to-end suite flaky. Naming them here pre-bundles them at
+    // startup, so no reload happens after the server reports ready.
+    optimizeDeps: {
+      include: [
+        "@orpc/client",
+        "@orpc/client/fetch",
+        "@sentry/astro",
+        "better-auth/client",
+        "hls.js",
+        "posthog-js",
+        "zod",
+      ],
+    },
     build: {
       chunkSizeWarningLimit: 600,
     },

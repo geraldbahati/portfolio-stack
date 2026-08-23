@@ -84,6 +84,8 @@ const alt = project.alt || project.title;
                   ))}
                   <img
                     src={media.posterSrc}
+                    srcset={media.srcset || undefined}
+                    sizes={media.sizes}
                     alt=""
                     width="1280"
                     height="720"

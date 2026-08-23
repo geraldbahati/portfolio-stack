@@ -39,7 +39,7 @@ export function mountGridPattern(slot: HTMLElement) {
   const svg = slot.querySelector("svg");
   const group = svg?.querySelector<SVGGElement>("[data-grid-highlights]");
   if (!svg || !group) {
-    return;
+    return () => undefined;
   }
 
   const pool: SVGRectElement[] = [];
@@ -247,4 +247,19 @@ export function mountGridPattern(slot: HTMLElement) {
   );
 
   observer.observe(svg);
+
+  return () => {
+    observer.disconnect();
+    detach();
+    window.clearTimeout(leaveTimer);
+    if (raf !== 0) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+    for (const rect of pool) {
+      rect.remove();
+    }
+    pool.length = 0;
+    trail.length = 0;
+  };
 }

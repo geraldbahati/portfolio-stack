@@ -94,12 +94,8 @@ export async function listAdminProjects(
         title: project.title,
         description: project.description,
         type: project.type,
-        poster: project.poster,
-        alt: project.alt,
-        url: project.url,
         sortOrder: project.sortOrder,
         isPublished: project.isPublished,
-        createdAt: project.createdAt,
         updatedAt: project.updatedAt,
       })
       .from(project)

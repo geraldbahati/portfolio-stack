@@ -1,31 +1,35 @@
 import { initHls } from "./hls";
 import { shouldAutoplay } from "./media-state";
 
-function prefersReducedMotion() {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 export function bindShowcaseVideo(root: HTMLElement) {
   const card = root.querySelector<HTMLElement>("[data-showcase-video]");
   const video = card?.querySelector("video");
   const poster = card?.querySelector<HTMLElement>("[data-project-poster]");
   const src = card?.dataset.mediaSrc;
   if (!card || !video || !src) {
-    return;
+    return () => undefined;
   }
 
   video.disableRemotePlayback = true;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const events = new AbortController();
   let activated = false;
   let loaded = false;
   let visible = false;
   let playing = false;
+  let destroyed = false;
+  let pointerFrame = 0;
+  let pointerX = 0;
+  let pointerY = 0;
+  let resumeFrame = 0;
   let hls: Awaited<ReturnType<typeof initHls>> = null;
 
   const sync = () => {
     const shouldPlay = shouldAutoplay({
       visible,
+      pageVisible: !document.hidden,
       playbackEnabled: true,
-      reducedMotion: prefersReducedMotion(),
+      reducedMotion: reducedMotion.matches,
     });
     poster?.classList.toggle("is-off", shouldPlay && loaded);
     card.classList.toggle("is-playing", shouldPlay);
@@ -34,7 +38,7 @@ export function bindShowcaseVideo(root: HTMLElement) {
       return;
     }
 
-    if (playing === shouldPlay) {
+    if (playing === shouldPlay && shouldPlay !== video.paused) {
       return;
     }
 
@@ -53,7 +57,7 @@ export function bindShowcaseVideo(root: HTMLElement) {
   };
 
   const activate = async () => {
-    if (activated || prefersReducedMotion() || !visible) {
+    if (destroyed || activated || reducedMotion.matches || document.hidden || !visible) {
       return;
     }
     activated = true;
@@ -63,16 +67,28 @@ export function bindShowcaseVideo(root: HTMLElement) {
         video,
         src,
         () => {
+          if (destroyed) {
+            return;
+          }
           loaded = true;
           sync();
         },
         () => {
-          card.dataset.mediaError = "true";
+          if (!destroyed) {
+            card.dataset.mediaError = "true";
+          }
         },
       );
+      if (destroyed) {
+        hls?.destroy();
+        hls = null;
+        return;
+      }
       sync();
     } catch {
-      card.dataset.mediaError = "true";
+      if (!destroyed) {
+        card.dataset.mediaError = "true";
+      }
     }
   };
 
@@ -88,22 +104,67 @@ export function bindShowcaseVideo(root: HTMLElement) {
   );
   visibility.observe(card);
 
-  if (window.matchMedia("(pointer: fine)").matches && card.dataset.liveUrl) {
-    let frame = 0;
-    let mx = 0;
-    let my = 0;
-    card.addEventListener("pointermove", (event) => {
-      const rect = card.getBoundingClientRect();
-      mx = event.clientX - rect.left;
-      my = event.clientY - rect.top;
-      if (frame !== 0) {
+  const syncEnvironment = () => {
+    sync();
+    if (visible && !document.hidden && !reducedMotion.matches) {
+      void activate();
+    }
+  };
+
+  video.addEventListener(
+    "pause",
+    () => {
+      if (destroyed || !playing || document.hidden || resumeFrame !== 0) {
         return;
       }
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        card.style.setProperty("--mx", `${mx}px`);
-        card.style.setProperty("--my", `${my}px`);
+      resumeFrame = requestAnimationFrame(() => {
+        resumeFrame = 0;
+        if (!destroyed && playing && video.paused) {
+          void video.play().catch(() => undefined);
+        }
       });
-    });
+    },
+    { signal: events.signal },
+  );
+  document.addEventListener("visibilitychange", syncEnvironment, { signal: events.signal });
+  reducedMotion.addEventListener("change", syncEnvironment, { signal: events.signal });
+
+  if (window.matchMedia("(pointer: fine)").matches && card.dataset.liveUrl) {
+    card.addEventListener(
+      "pointermove",
+      (event) => {
+        pointerX = event.clientX;
+        pointerY = event.clientY;
+        if (pointerFrame !== 0) {
+          return;
+        }
+        pointerFrame = requestAnimationFrame(() => {
+          pointerFrame = 0;
+          const rect = card.getBoundingClientRect();
+          card.style.setProperty("--mx", `${pointerX - rect.left}px`);
+          card.style.setProperty("--my", `${pointerY - rect.top}px`);
+        });
+      },
+      { signal: events.signal },
+    );
   }
+
+  return () => {
+    if (destroyed) {
+      return;
+    }
+    destroyed = true;
+    events.abort();
+    visibility.disconnect();
+    if (pointerFrame !== 0) {
+      cancelAnimationFrame(pointerFrame);
+    }
+    if (resumeFrame !== 0) {
+      cancelAnimationFrame(resumeFrame);
+    }
+    playing = false;
+    video.pause();
+    hls?.destroy();
+    hls = null;
+  };
 }
