@@ -6,6 +6,7 @@ import Cta from "./Cta.astro";
 import Gallery from "./Gallery.astro";
 import Hero from "./Hero.astro";
 import Info from "./Info.astro";
+import LiveJump from "./LiveJump.astro";
 import Metrics from "./Metrics.astro";
 import Navigation from "./Navigation.astro";
 import Testimonial from "./Testimonial.astro";
@@ -24,6 +25,7 @@ const { study, hero } = Astro.props;
 ---
 
 <div data-project-detail data-project-slug={study.project.id}>
+  {study.project.url && <LiveJump url={study.project.url} title={study.project.title} />}
   <Hero title={study.project.title} hero={hero} />
   {study.details && <Info details={study.details} />}
   <Challenges challenges={study.challenges} />
@@ -41,6 +43,17 @@ const { study, hero } = Astro.props;
       opacity: 1 !important;
       transform: none !important;
       animation: none !important;
+    }
+
+    [data-project-detail] .project-hint__stroke,
+    [data-project-detail] .project-jump__stroke {
+      stroke-dashoffset: 0;
+    }
+
+    [data-project-detail] [data-live-jump] {
+      opacity: 1;
+      visibility: visible;
+      transform: none;
     }
   </style>
 </noscript>

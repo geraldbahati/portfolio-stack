@@ -174,6 +174,59 @@ function bindProjectCta(root: HTMLElement) {
   };
 }
 
+/**
+ * Floating live-site shortcut. Visible until the page reaches the section that
+ * carries the link itself, and stays gone for everything below it — one
+ * observer, no scroll listener.
+ */
+function bindLiveJump(root: HTMLElement) {
+  const jump = root.querySelector<HTMLElement>("[data-live-jump]");
+  if (!jump) {
+    return () => undefined;
+  }
+
+  const events = new AbortController();
+  const link = jump.querySelector<HTMLAnchorElement>("[data-live-jump-link]");
+  link?.addEventListener(
+    "click",
+    () => {
+      trackOutboundLinkClicked({
+        destination: link.href,
+        surface: "project_detail_sticky",
+      });
+    },
+    { signal: events.signal },
+  );
+
+  // First match in document order: the video section, or the CTA when a case
+  // study has no video at all.
+  const anchor = root.querySelector<HTMLElement>("[data-live-anchor]");
+  if (!anchor) {
+    jump.classList.add("is-on");
+    return () => events.abort();
+  }
+
+  // Stretching the root far upwards turns "is it on screen" into "has its top
+  // come above the viewport bottom" — one state change instead of two, so an
+  // instant jump back to the top still crosses a threshold and fires.
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const entry = entries.at(-1);
+      if (!entry) {
+        return;
+      }
+      jump.classList.toggle("is-on", !entry.isIntersecting);
+    },
+    { rootMargin: "100000px 0px 0px 0px", threshold: 0 },
+  );
+  observer.observe(anchor);
+
+  return () => {
+    events.abort();
+    observer.disconnect();
+  };
+}
+
 export function enhanceProjectDetail(root: HTMLElement) {
   const events = new AbortController();
   const cleanups = [
@@ -181,6 +234,7 @@ export function enhanceProjectDetail(root: HTMLElement) {
     bindShowcaseVideo(root),
     bindScrollDepth(root),
     bindProjectCta(root),
+    bindLiveJump(root),
   ];
 
   const live = root.querySelector<HTMLAnchorElement>("[data-live-link]");

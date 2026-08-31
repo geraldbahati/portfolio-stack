@@ -4,7 +4,7 @@ import type { PublishedProject } from "@portfolio-stack/api/routers/projects";
 
 import "../../components/project-card/project-card.css";
 import { projectMediaAssets } from "../../lib/project-media/poster";
-import { LIVE_HINT, LIVE_HINT_MOBILE } from "./copy";
+import { LIVE_HINT, LIVE_HINT_MOBILE, LIVE_HINT_VISIT } from "./copy";
 
 interface Props {
   project: PublishedProject;
@@ -21,37 +21,35 @@ const alt = project.alt || project.title;
 
 {
   project.type === "video" && (
-    <section class="project-deferred-section bg-background py-24">
+    <section class="project-deferred-section bg-background py-24" data-live-anchor>
       <div class="mx-auto max-w-4xl px-2">
-        <p class="project-live-hint mb-4 flex flex-col items-center text-sm font-medium text-primary lg:hidden" data-reveal="up">
-          {LIVE_HINT_MOBILE}
-          <svg class="mt-1 h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <path d="M12 5v14M19 12l-7 7-7-7"></path>
-          </svg>
-        </p>
-        <div class="relative">
+        {hasUrl && (
+          <div class="project-hint project-hint--tap" data-reveal="up" aria-hidden="true">
+            <span class="project-hint__label">{LIVE_HINT_MOBILE}</span>
+            <svg class="project-hint__arrow" viewBox="0 0 40 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+              <path class="project-hint__stroke" pathLength="1" d="M21 2C24 19 15 37 19 57" />
+              <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" d="M19 57C15 49 11 44 6 38" />
+              <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" style="--tip-delay:60ms" d="M19 57C24 50 28 44 34 39" />
+            </svg>
+          </div>
+        )}
+        <div class="project-showcase">
           {hasUrl && (
             <>
-              <div
-                class="project-live-hint pointer-events-none absolute -left-4 top-24 z-10 hidden items-center justify-center lg:flex md:-left-56 md:top-8"
-                data-reveal="up"
-                aria-hidden="true"
-              >
-                <span class="mb-32 -mr-20 whitespace-nowrap text-xl font-medium text-primary md:text-2xl">{LIVE_HINT}</span>
-                <svg class="h-28 w-28 text-primary" viewBox="0 0 120 120" fill="none">
-                  <path d="M12 18c35 5 58 26 65 62" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
-                  <path d="m64 70 14 12 8-17" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+              <div class="project-hint project-hint--lead" data-reveal="up" aria-hidden="true">
+                <span class="project-hint__label">{LIVE_HINT}</span>
+                <svg class="project-hint__arrow" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path class="project-hint__stroke" pathLength="1" d="M9 5C11 26 16 45 30 63C44 81 71 97 105 109" />
+                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" d="M105 109C95 98 87 88 78 76" />
+                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" style="--tip-delay:60ms" d="M105 109C89 112 72 109 59 99" />
                 </svg>
               </div>
-              <div
-                class="project-live-hint pointer-events-none absolute -right-4 top-1/2 z-10 hidden flex-col items-end gap-4 lg:flex md:-right-32"
-                data-reveal="up"
-                aria-hidden="true"
-              >
-                <span class="-mr-16 whitespace-nowrap text-xl font-medium text-primary md:text-2xl">Click to visit</span>
-                <svg class="mr-2 h-24 w-24 rotate-[20deg] text-primary" viewBox="0 0 120 120" fill="none">
-                  <path d="M18 20c10 38 34 60 70 67" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
-                  <path d="m76 73 13 15-19 5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+              <div class="project-hint project-hint--visit" data-reveal="up" aria-hidden="true">
+                <span class="project-hint__label">{LIVE_HINT_VISIT}</span>
+                <svg class="project-hint__arrow" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path class="project-hint__stroke" pathLength="1" d="M119 5C114 21 99 31 78 43C64 53 46 61 34 51C23 41 31 25 48 23C65 21 80 29 83 40C74 57 48 70 28 83C21 88 14 92 7 97" />
+                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" d="M7 97C20 96 33 94 45 90" />
+                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" style="--tip-delay:60ms" d="M7 97C9 86 13 77 21 68" />
                 </svg>
               </div>
             </>

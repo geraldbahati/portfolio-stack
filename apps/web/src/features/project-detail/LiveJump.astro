@@ -1,0 +1,70 @@
+---
+import { LIVE_HINT_VISIT, LIVE_JUMP_FALLBACK } from "./copy";
+
+interface Props {
+  url: string;
+  title: string;
+}
+
+const { url, title } = Astro.props;
+
+/** Bare host reads as the link itself, which is what the hint promises. */
+function siteHost(value: string) {
+  try {
+    return new URL(value).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+const host = siteHost(url);
+// Keeps the visible text inside the accessible name (WCAG 2.5.3 Label in Name).
+const linkLabel = host ? `Visit ${host}, the live ${title} site` : `Visit the live ${title} site`;
+---
+
+<div class="project-jump" data-live-jump>
+  <span class="project-jump__label" aria-hidden="true">{LIVE_HINT_VISIT}</span>
+  <div class="project-jump__row">
+    <svg
+      class="project-jump__arrow"
+      viewBox="0 0 120 120"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="7.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path class="project-jump__stroke" pathLength="1" d="M9 5C11 26 16 45 30 63C44 81 71 97 105 109"></path>
+      <path class="project-jump__stroke project-jump__stroke--tip" pathLength="1" d="M105 109C95 98 87 88 78 76"
+      ></path>
+      <path
+        class="project-jump__stroke project-jump__stroke--tip"
+        pathLength="1"
+        style="--tip-delay:60ms"
+        d="M105 109C89 112 72 109 59 99"></path>
+    </svg>
+    <a
+      class="project-jump__link"
+      href={url}
+      data-live-jump-link
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={linkLabel}
+    >
+      {host ?? LIVE_JUMP_FALLBACK}
+      <svg
+        class="project-jump__icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M7 17 17 7M9 7h8v8"></path>
+      </svg>
+    </a>
+  </div>
+</div>
