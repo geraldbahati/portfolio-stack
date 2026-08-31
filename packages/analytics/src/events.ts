@@ -6,6 +6,7 @@ export type Surface =
   | "contact_section"
   | "contact_page"
   | "project_detail"
+  | "project_detail_sticky"
   | "projects_index"
   | "home_grid";
 

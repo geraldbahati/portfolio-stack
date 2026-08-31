@@ -114,6 +114,324 @@
   contain-intrinsic-size: auto 800px;
 }
 
+[data-project-detail] {
+  /* One knob for every arrow on the page: draw, hold, wipe, repeat. */
+  --draw-cycle: 2.2s;
+}
+
+.project-showcase {
+  position: relative;
+}
+
+.project-hint {
+  display: none;
+  color: var(--color-primary);
+  pointer-events: none;
+  --arrow-size: 7rem;
+}
+
+.project-hint__label {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.project-hint__arrow {
+  display: block;
+  flex: none;
+  width: var(--arrow-size);
+  height: var(--arrow-size);
+}
+
+/* The loop eats into its box, so it rides a little larger than the sweep. */
+.project-hint--visit .project-hint__arrow {
+  width: calc(var(--arrow-size) * 1.12);
+  height: calc(var(--arrow-size) * 1.12);
+}
+
+.project-arrow__stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+/* Draws itself, holds, then wipes away tail-first, forever. */
+.project-hint.is-in .project-arrow__stroke,
+.project-jump.is-on .project-arrow__stroke {
+  animation: project-arrow-draw var(--draw-cycle) linear infinite;
+}
+
+.project-hint.is-in .project-arrow__stroke--tip,
+.project-jump.is-on .project-arrow__stroke--tip {
+  animation-name: project-arrow-draw-tip;
+  animation-delay: var(--tip-delay, 0ms);
+}
+
+@keyframes project-arrow-draw {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  22% {
+    stroke-dashoffset: 0;
+  }
+  66% {
+    stroke-dashoffset: 0;
+  }
+  84%,
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
+/* Arrow heads wait for the shaft to land, then leave after it. */
+@keyframes project-arrow-draw-tip {
+  0%,
+  15% {
+    stroke-dashoffset: 1;
+  }
+  26% {
+    stroke-dashoffset: 0;
+  }
+  70% {
+    stroke-dashoffset: 0;
+  }
+  88%,
+  100% {
+    stroke-dashoffset: -1;
+  }
+}
+
+/* Tap hint: sits above the video on anything narrower than the desktop layout. */
+.project-hint--tap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+  --nudge-x: 0;
+  --nudge-y: 6px;
+}
+
+.project-hint--tap .project-hint__label {
+  font-size: 1.0625rem;
+}
+
+/* Below 1280px this hint also covers mouse-driven windows, so the verb comes
+   from the input device rather than the width. */
+.project-hint__verb--pointer {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .project-hint__verb--touch {
+    display: none;
+  }
+
+  .project-hint__verb--pointer {
+    display: inline;
+  }
+}
+
+.project-hint--tap .project-hint__arrow {
+  width: 2.25rem;
+  height: 3.5rem;
+}
+
+/* Desktop hints only appear once there is room beside the 56rem column. */
+@media (min-width: 1280px) {
+  .project-hint--tap {
+    display: none;
+  }
+
+  .project-hint--lead,
+  .project-hint--visit {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  /* Sweeps down-right into the top-left corner of the video. */
+  .project-hint--lead {
+    top: -2.75rem;
+    right: calc(100% + 0.5rem);
+    --nudge-x: 5px;
+    --nudge-y: 5px;
+  }
+
+  /* Hangs the phrase left so the stroke starts under "it out". */
+  .project-hint--lead .project-hint__label {
+    margin-left: var(--label-shift, -3.25rem);
+  }
+
+  /* Loops back down-left into the right edge of the video, label over its tail. */
+  .project-hint--visit {
+    top: 26%;
+    left: calc(100% + 1.25rem);
+    align-items: flex-end;
+    --nudge-x: -5px;
+    --nudge-y: 5px;
+  }
+
+  .project-hint--visit .project-hint__label {
+    margin-right: -0.75rem;
+  }
+}
+
+@media (min-width: 1440px) {
+  .project-hint--lead,
+  .project-hint--visit {
+    --arrow-size: 7.5rem;
+  }
+
+  .project-hint--lead {
+    top: -3.5rem;
+    --label-shift: -5.125rem;
+  }
+}
+
+@media (min-width: 1600px) {
+  .project-hint--lead,
+  .project-hint--visit {
+    --arrow-size: 8.5rem;
+  }
+
+  .project-hint--lead {
+    --label-shift: -6.125rem;
+  }
+
+  .project-hint__label {
+    font-size: 1.5rem;
+  }
+}
+
+/* Floating shortcut to the live site: hands over the link before the visitor has
+   scrolled as far as the video, then steps aside from that section down. */
+.project-jump {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 30;
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.125rem;
+  color: var(--color-primary);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0.5rem);
+  transition:
+    opacity 240ms ease,
+    transform 240ms ease,
+    visibility 240ms;
+  /* Only the link takes the pointer; the drawing never blocks the page. */
+  pointer-events: none;
+}
+
+/* Desktop only, and only where the corner is genuinely spare. */
+@media (min-width: 1024px) and (min-height: 560px) {
+  .project-jump {
+    display: flex;
+  }
+}
+
+.project-jump.is-on {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.project-jump__label {
+  margin-left: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.project-jump__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.project-jump__arrow {
+  width: 2.75rem;
+  height: 2.75rem;
+  flex: none;
+  transition: transform 240ms ease;
+}
+
+.project-jump:hover .project-jump__arrow {
+  transform: translate3d(3px, 3px, 0);
+}
+
+.project-jump__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid color-mix(in oklch, var(--color-primary) 30%, transparent);
+  border-radius: 999px;
+  background: var(--color-background);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-primary);
+  text-decoration: none;
+  box-shadow: 0 10px 24px -18px rgb(0 0 0 / 0.65);
+  pointer-events: auto;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+
+.project-jump__link:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+}
+
+.project-jump__link:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}
+
+.project-jump__icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex: none;
+}
+
+/* The consent banner covers the corner on a first visit; ride above it. */
+body:has(#consent-banner:not([hidden])) .project-jump {
+  bottom: 7.5rem;
+}
+
+/* Mirrors the `short` variant in global.css: laptops at 125-150% scaling. */
+@media (max-height: 800px) and (min-width: 1024px) and (max-width: 1440px) {
+  .project-jump {
+    right: 1rem;
+    bottom: 1rem;
+  }
+
+  .project-jump__label {
+    font-size: 0.75rem;
+  }
+
+  .project-jump__arrow {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+
+  .project-jump__link {
+    padding: 0.3125rem 0.625rem;
+    font-size: 0.75rem;
+  }
+}
+
 [data-reveal] {
   opacity: 0;
 }
@@ -154,6 +472,21 @@
   [data-showcase-video].is-live {
     animation: project-float 4s ease-in-out infinite;
   }
+
+  .project-hint.is-in .project-hint__label,
+  .project-hint.is-in .project-hint__arrow {
+    animation: project-hint-nudge 2.6s ease-in-out 0.5s infinite;
+  }
+}
+
+@keyframes project-hint-nudge {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(var(--nudge-x, 0), var(--nudge-y, 0), 0);
+  }
 }
 
 @keyframes project-float {
@@ -188,7 +521,26 @@
     cursor: pointer;
   }
 
-  .project-live-hint {
-    display: none;
+  .project-arrow__stroke {
+    stroke-dashoffset: 0;
+  }
+
+  .project-hint.is-in .project-hint__label,
+  .project-hint.is-in .project-hint__arrow,
+  .project-hint.is-in .project-arrow__stroke,
+  .project-hint.is-in .project-arrow__stroke--tip,
+  .project-jump.is-on .project-arrow__stroke,
+  .project-jump.is-on .project-arrow__stroke--tip {
+    animation: none;
+  }
+
+  .project-jump,
+  .project-jump__arrow,
+  .project-jump__link {
+    transition: none;
+  }
+
+  .project-jump:hover .project-jump__arrow {
+    transform: none;
   }
 }

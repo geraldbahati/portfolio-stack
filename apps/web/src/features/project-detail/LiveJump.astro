@@ -1,0 +1,43 @@
+---
+import Arrow from "./Arrow.astro";
+import { SWEEP_ARROW } from "./arrows";
+import { LIVE_HINT_VISIT, LIVE_JUMP_FALLBACK } from "./copy";
+import { liveJumpLabel, siteHost } from "./live-jump";
+
+interface Props {
+  url: string;
+  title: string;
+}
+
+const { url, title } = Astro.props;
+const host = siteHost(url);
+---
+
+<div class="project-jump" data-live-jump>
+  <span class="project-jump__label" aria-hidden="true">{LIVE_HINT_VISIT}</span>
+  <div class="project-jump__row">
+    <Arrow arrow={SWEEP_ARROW} class="project-jump__arrow" strokeWidth={7.5} />
+    <a
+      class="project-jump__link"
+      href={url}
+      data-live-jump-link
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={liveJumpLabel(host, title)}
+    >
+      {host ?? LIVE_JUMP_FALLBACK}
+      <svg
+        class="project-jump__icon"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M7 17 17 7M9 7h8v8"></path>
+      </svg>
+    </a>
+  </div>
+</div>

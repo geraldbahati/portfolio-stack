@@ -12,4 +12,6 @@ export const PERIOD_LABEL = "Period:";
 export const PERFORMANCE_LABEL = "Performance:";
 export const FEATURES_LABEL = "Features:";
 export const LIVE_HINT = "Check it out";
+export const LIVE_HINT_VISIT = "Click to visit";
 export const LIVE_HINT_MOBILE = "Tap to visit";
+export const LIVE_JUMP_FALLBACK = "Visit site";
