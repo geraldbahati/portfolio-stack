@@ -4,6 +4,8 @@ import type { PublishedProject } from "@portfolio-stack/api/routers/projects";
 
 import "../../components/project-card/project-card.css";
 import { projectMediaAssets } from "../../lib/project-media/poster";
+import Arrow from "./Arrow.astro";
+import { DOWN_ARROW, LOOP_ARROW, SWEEP_ARROW } from "./arrows";
 import { LIVE_HINT, LIVE_HINT_MOBILE, LIVE_HINT_VISIT } from "./copy";
 
 interface Props {
@@ -25,12 +27,11 @@ const alt = project.alt || project.title;
       <div class="mx-auto max-w-4xl px-2">
         {hasUrl && (
           <div class="project-hint project-hint--tap" data-reveal="up" aria-hidden="true">
-            <span class="project-hint__label">{LIVE_HINT_MOBILE}</span>
-            <svg class="project-hint__arrow" viewBox="0 0 40 64" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-              <path class="project-hint__stroke" pathLength="1" d="M21 2C24 19 15 37 19 57" />
-              <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" d="M19 57C15 49 11 44 6 38" />
-              <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" style="--tip-delay:60ms" d="M19 57C24 50 28 44 34 39" />
-            </svg>
+            <span class="project-hint__label">
+              <span class="project-hint__verb project-hint__verb--touch">{LIVE_HINT_MOBILE}</span>
+              <span class="project-hint__verb project-hint__verb--pointer">{LIVE_HINT_VISIT}</span>
+            </span>
+            <Arrow arrow={DOWN_ARROW} class="project-hint__arrow" />
           </div>
         )}
         <div class="project-showcase">
@@ -38,19 +39,11 @@ const alt = project.alt || project.title;
             <>
               <div class="project-hint project-hint--lead" data-reveal="up" aria-hidden="true">
                 <span class="project-hint__label">{LIVE_HINT}</span>
-                <svg class="project-hint__arrow" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path class="project-hint__stroke" pathLength="1" d="M9 5C11 26 16 45 30 63C44 81 71 97 105 109" />
-                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" d="M105 109C95 98 87 88 78 76" />
-                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" style="--tip-delay:60ms" d="M105 109C89 112 72 109 59 99" />
-                </svg>
+                <Arrow arrow={SWEEP_ARROW} class="project-hint__arrow" />
               </div>
               <div class="project-hint project-hint--visit" data-reveal="up" aria-hidden="true">
                 <span class="project-hint__label">{LIVE_HINT_VISIT}</span>
-                <svg class="project-hint__arrow" viewBox="0 0 120 120" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-                  <path class="project-hint__stroke" pathLength="1" d="M119 5C114 21 99 31 78 43C64 53 46 61 34 51C23 41 31 25 48 23C65 21 80 29 83 40C74 57 48 70 28 83C21 88 14 92 7 97" />
-                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" d="M7 97C20 96 33 94 45 90" />
-                  <path class="project-hint__stroke project-hint__stroke--tip" pathLength="1" style="--tip-delay:60ms" d="M7 97C9 86 13 77 21 68" />
-                </svg>
+                <Arrow arrow={LOOP_ARROW} class="project-hint__arrow" />
               </div>
             </>
           )}

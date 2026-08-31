@@ -114,6 +114,11 @@
   contain-intrinsic-size: auto 800px;
 }
 
+[data-project-detail] {
+  /* One knob for every arrow on the page: draw, hold, wipe, repeat. */
+  --draw-cycle: 2.2s;
+}
+
 .project-showcase {
   position: relative;
 }
@@ -145,22 +150,24 @@
   height: calc(var(--arrow-size) * 1.12);
 }
 
-.project-hint__stroke {
+.project-arrow__stroke {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
 }
 
 /* Draws itself, holds, then wipes away tail-first, forever. */
-.project-hint.is-in .project-hint__stroke {
-  animation: project-hint-draw var(--draw-cycle, 2.2s) linear infinite;
+.project-hint.is-in .project-arrow__stroke,
+.project-jump.is-on .project-arrow__stroke {
+  animation: project-arrow-draw var(--draw-cycle) linear infinite;
 }
 
-.project-hint.is-in .project-hint__stroke--tip {
-  animation-name: project-hint-draw-tip;
+.project-hint.is-in .project-arrow__stroke--tip,
+.project-jump.is-on .project-arrow__stroke--tip {
+  animation-name: project-arrow-draw-tip;
   animation-delay: var(--tip-delay, 0ms);
 }
 
-@keyframes project-hint-draw {
+@keyframes project-arrow-draw {
   0% {
     stroke-dashoffset: 1;
   }
@@ -177,7 +184,7 @@
 }
 
 /* Arrow heads wait for the shaft to land, then leave after it. */
-@keyframes project-hint-draw-tip {
+@keyframes project-arrow-draw-tip {
   0%,
   15% {
     stroke-dashoffset: 1;
@@ -208,6 +215,22 @@
   font-size: 1.0625rem;
 }
 
+/* Below 1280px this hint also covers mouse-driven windows, so the verb comes
+   from the input device rather than the width. */
+.project-hint__verb--pointer {
+  display: none;
+}
+
+@media (pointer: fine) {
+  .project-hint__verb--touch {
+    display: none;
+  }
+
+  .project-hint__verb--pointer {
+    display: inline;
+  }
+}
+
 .project-hint--tap .project-hint__arrow {
   width: 2.25rem;
   height: 3.5rem;
@@ -227,7 +250,6 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
-    --arrow-size: 7rem;
   }
 
   /* Sweeps down-right into the top-left corner of the video. */
@@ -345,23 +367,6 @@
   transform: translate3d(3px, 3px, 0);
 }
 
-.project-jump__stroke {
-  stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-}
-
-/* Same draw-hold-wipe cycle as the arrows beside the video, so the two read as
-   one hand. Repaints cover 44px of corner and stop with the rest of the page
-   whenever the tab is backgrounded. */
-.project-jump.is-on .project-jump__stroke {
-  animation: project-hint-draw var(--draw-cycle, 2.2s) linear infinite;
-}
-
-.project-jump.is-on .project-jump__stroke--tip {
-  animation-name: project-hint-draw-tip;
-  animation-delay: var(--tip-delay, 0ms);
-}
-
 .project-jump__link {
   display: inline-flex;
   align-items: center;
@@ -398,6 +403,11 @@
   width: 0.875rem;
   height: 0.875rem;
   flex: none;
+}
+
+/* The consent banner covers the corner on a first visit; ride above it. */
+body:has(#consent-banner:not([hidden])) .project-jump {
+  bottom: 7.5rem;
 }
 
 /* Mirrors the `short` variant in global.css: laptops at 125-150% scaling. */
@@ -511,16 +521,16 @@
     cursor: pointer;
   }
 
-  .project-hint__stroke,
-  .project-jump__stroke {
+  .project-arrow__stroke {
     stroke-dashoffset: 0;
   }
 
-  .project-hint.is-in .project-hint__stroke,
   .project-hint.is-in .project-hint__label,
   .project-hint.is-in .project-hint__arrow,
-  .project-jump.is-on .project-jump__stroke,
-  .project-jump.is-on .project-jump__stroke--tip {
+  .project-hint.is-in .project-arrow__stroke,
+  .project-hint.is-in .project-arrow__stroke--tip,
+  .project-jump.is-on .project-arrow__stroke,
+  .project-jump.is-on .project-arrow__stroke--tip {
     animation: none;
   }
 
@@ -528,10 +538,6 @@
   .project-jump__arrow,
   .project-jump__link {
     transition: none;
-  }
-
-  .project-jump {
-    transform: none;
   }
 
   .project-jump:hover .project-jump__arrow {

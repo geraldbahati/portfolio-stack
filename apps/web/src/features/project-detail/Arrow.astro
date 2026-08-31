@@ -1,0 +1,36 @@
+---
+import type { HandArrow } from "./arrows";
+
+interface Props {
+  arrow: HandArrow;
+  /** Sizing class; the stroke classes the animation keys off are added here. */
+  class: string;
+  /** Set in viewBox units, so small renders still read at the same weight. */
+  strokeWidth?: number;
+}
+
+const { arrow, class: className, strokeWidth = 3.2 } = Astro.props;
+---
+
+<svg
+  class:list={[className]}
+  viewBox={arrow.viewBox}
+  fill="none"
+  stroke="currentColor"
+  stroke-width={strokeWidth}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+>
+  <path class="project-arrow__stroke" pathLength="1" d={arrow.shaft}></path>
+  {
+    arrow.barbs.map((barb, index) => (
+      <path
+        class="project-arrow__stroke project-arrow__stroke--tip"
+        pathLength="1"
+        style={index === 1 ? "--tip-delay:60ms" : undefined}
+        d={barb}
+      />
+    ))
+  }
+</svg>
