@@ -1,15 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { initHls } from "./hls";
-
-const hlsMocks = {
+const hlsMocks = vi.hoisted(() => ({
   attachMedia: vi.fn(),
   construct: vi.fn(),
   loadSource: vi.fn(),
   on: vi.fn(),
-};
+  importModule: vi.fn(),
+}));
 
 vi.mock("hls.js", () => {
+  hlsMocks.importModule();
   class HlsMock {
     static Events = {
       ERROR: "error",
@@ -39,7 +39,25 @@ afterEach(() => {
 });
 
 describe("project HLS initialization", () => {
+  it("uses native HLS without importing the JavaScript player", async () => {
+    vi.resetModules();
+    const { initHls } = await import("./hls");
+    const onReady = vi.fn();
+    const video = {
+      canPlayType: vi.fn(() => "probably"),
+      addEventListener: vi.fn(),
+      src: "",
+    } as unknown as HTMLVideoElement;
+
+    expect(await initHls(video, "https://example.com/video.m3u8", onReady, vi.fn())).toBeNull();
+    expect(video.src).toBe("https://example.com/video.m3u8");
+    expect(video.addEventListener).toHaveBeenCalledWith("canplay", onReady, { once: true });
+    expect(hlsMocks.importModule).not.toHaveBeenCalled();
+    expect(hlsMocks.construct).not.toHaveBeenCalled();
+  });
+
   it("starts loading after the media element is attached", async () => {
+    const { initHls } = await import("./hls");
     vi.stubGlobal("window", {
       matchMedia: vi.fn(() => ({ matches: false })),
     });
@@ -64,5 +82,22 @@ describe("project HLS initialization", () => {
     mediaAttachedHandler?.();
 
     expect(hlsMocks.loadSource).toHaveBeenCalledWith("https://example.com/video.m3u8");
+  });
+
+  it("can force the JavaScript player after native playback fails", async () => {
+    const { initHls } = await import("./hls");
+    vi.stubGlobal("window", {
+      matchMedia: vi.fn(() => ({ matches: false })),
+    });
+    const video = {
+      canPlayType: vi.fn(() => "probably"),
+    } as unknown as HTMLVideoElement;
+
+    await initHls(video, "https://example.com/video.m3u8", vi.fn(), vi.fn(), {
+      forceHlsJs: true,
+    });
+
+    expect(hlsMocks.construct).toHaveBeenCalledOnce();
+    expect(hlsMocks.attachMedia).toHaveBeenCalledWith(video);
   });
 });

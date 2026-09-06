@@ -8,11 +8,18 @@ import { FAQ_ENTRIES, PROJECTS_DIVIDER } from "../features/projects-faq/copy";
 import ProjectsFaq from "../features/projects-faq/ProjectsFaq.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
 import { loadPublishedProjects } from "../lib/data/projects";
+import * as publicData from "../lib/data/public-request";
 import { hero } from "../lib/images/site-images";
 import { homepageJsonLd } from "../lib/seo/json-ld";
 import { PAGE_COPY } from "../lib/seo/page-copy";
 
-const projects = await loadPublishedProjects();
+let projects: Awaited<ReturnType<typeof loadPublishedProjects>>;
+try {
+  projects = await loadPublishedProjects();
+} catch (error) {
+  if (!(error instanceof publicData.PublicDataUnavailableError)) throw error;
+  return publicData.serviceUnavailable(await Astro.rewrite("/500"));
+}
 ---
 
 <SiteLayout

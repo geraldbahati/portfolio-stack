@@ -1,6 +1,9 @@
 import { distilledCloudflare } from "@alchemy.run/cloudflare-frameworks/astro/cloudflare";
 
-import config from "./astro.config.mjs";
+import { createAstroConfig } from "./astro.config.mjs";
+
+// Verification must stay local even when the developer has deployment credentials.
+const config = createAstroConfig({ uploadSourceMaps: false });
 
 /**
  * A deployment-free production build used by CI and local verification.

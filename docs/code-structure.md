@@ -61,10 +61,11 @@ features/hero-bio/
 Not every feature needs every file. The rule is that when a file exists, it has
 that name and that job.
 
-**`boot.ts` / `enhance.ts` is a performance budget expressed as file layout.**
-`boot.ts` runs immediately and stays small; it defers `enhance.ts` behind
-`requestIdleCallback`. `enhance.ts` checks `prefers-reduced-motion` first and
-dynamic-imports anything heavy. Keep it that way — it is why the site is fast.
+`boot.ts` runs immediately and stays small. Optional decorative enhancements
+can wait for `requestIdleCallback`; interactive sections can initialize their
+lightweight observers immediately. Heavy dependencies load when needed: video
+cards request HLS only when nearby and native playback is unavailable. Keep
+reduced-motion checks and the existing animation timing intact.
 
 A directory named `<thing>-page` implements a whole route; a directory named
 `<thing>` is a section composed into a page. Both live here because both are

@@ -3,12 +3,19 @@ import { PUBLIC_IMAGE_TRANSFORM_ZONE, PUBLIC_STREAM_CUSTOMER } from "astro:env/c
 import ProjectsIndex from "../features/projects-index/ProjectsIndex.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
 import { loadPublishedProjects } from "../lib/data/projects";
+import * as publicData from "../lib/data/public-request";
 import { IMAGE_PRESETS } from "../lib/images/image-presets";
 import { projectMediaAssets, projectPosterPreload } from "../lib/project-media/poster";
 import { projectsIndexJsonLd } from "../lib/seo/json-ld";
 import { PAGE_COPY } from "../lib/seo/page-copy";
 
-const projects = await loadPublishedProjects();
+let projects: Awaited<ReturnType<typeof loadPublishedProjects>>;
+try {
+  projects = await loadPublishedProjects();
+} catch (error) {
+  if (!(error instanceof publicData.PublicDataUnavailableError)) throw error;
+  return publicData.serviceUnavailable(await Astro.rewrite("/500"));
+}
 const first = projects[0];
 const media = first
   ? projectMediaAssets(

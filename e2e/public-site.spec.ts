@@ -2,8 +2,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 const PUBLIC_ROUTES = ["/", "/projects", "/contact", "/privacy", "/imprint"] as const;
-const API_BASE_URL = process.env.E2E_API_URL ?? "http://127.0.0.1:3000";
-const WEB_ORIGIN = new URL(process.env.E2E_BASE_URL ?? "http://localhost:4421").origin;
+const API_BASE_URL = process.env.E2E_API_URL || "http://127.0.0.1:3000";
+const WEB_ORIGIN = new URL(process.env.E2E_BASE_URL || "http://localhost:4421").origin;
 const PRIVATE_ADMIN_ROUTES = [
   "/admin",
   "/admin/activity",
@@ -164,6 +164,35 @@ test.describe("public portfolio", () => {
     await page.goto("/contact", { waitUntil: "domcontentloaded" });
     await expect(page.locator("main")).toBeVisible();
     expect(scripts.some((url) => url.includes("hls"))).toBe(false);
+  });
+
+  test("native HLS cards do not download the JavaScript video player", async ({ page }) => {
+    const playerRequests: string[] = [];
+    page.on("request", (request) => {
+      if (
+        request.resourceType() === "script" &&
+        /\/(?:hls_js|hls[.-][^/]+)\.js(?:\?|$)/.test(request.url())
+      ) {
+        playerRequests.push(request.url());
+      }
+    });
+    await page.addInitScript(() => {
+      const canPlayType = HTMLMediaElement.prototype.canPlayType;
+      HTMLMediaElement.prototype.canPlayType = function (type) {
+        return type === "application/vnd.apple.mpegurl" ? "probably" : canPlayType.call(this, type);
+      };
+      // Keep this download regression independent of external stream availability.
+      HTMLMediaElement.prototype.play = () =>
+        Promise.reject(new DOMException("Autoplay disabled for this test", "NotAllowedError"));
+    });
+
+    await page.goto("/projects", { waitUntil: "domcontentloaded" });
+    const video = page.locator('[data-project-card][data-media-type="video"] video').first();
+    test.skip((await video.count()) === 0, "No video projects are seeded in this environment");
+    await video.scrollIntoViewIfNeeded();
+    await expect(video).toHaveAttribute("src", /\.m3u8/);
+
+    expect(playerRequests).toEqual([]);
   });
 
   for (const route of PRIVATE_ADMIN_ROUTES) {

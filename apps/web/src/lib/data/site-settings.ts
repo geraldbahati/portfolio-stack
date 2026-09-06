@@ -6,22 +6,15 @@ import {
 
 import { orpc } from "./orpc";
 import { withPublicCache } from "./public-cache";
+import { fetchPublicData } from "./public-request";
 
 const SETTINGS_FETCH_MS = 500;
 const defaults = siteSettingsWriteSchema.parse(DEFAULT_PUBLIC_SITE_SETTINGS);
 
-async function fetchPublicSiteSettings(): Promise<PublicSiteSettings> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      orpc.settings.getPublic(),
-      new Promise<never>((_, reject) => {
-        timeout = setTimeout(() => reject(new Error("settings timeout")), SETTINGS_FETCH_MS);
-      }),
-    ]);
-  } finally {
-    if (timeout) clearTimeout(timeout);
-  }
+function fetchPublicSiteSettings(): Promise<PublicSiteSettings> {
+  return fetchPublicData("site-settings", SETTINGS_FETCH_MS, (signal) =>
+    orpc.settings.getPublic(undefined, { signal }),
+  );
 }
 
 export async function loadPublicSiteSettings(): Promise<PublicSiteSettings> {

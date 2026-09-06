@@ -97,6 +97,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
     headers.set("CDN-Cache-Control", cacheControl);
   }
 
+  // Never let an outage replace a cached public page, even for asset paths.
+  if (response.status >= 500) {
+    headers.set("Cache-Control", "no-store");
+    headers.set("CDN-Cache-Control", "no-store");
+  }
+
   if (isPrivatePath(pathname)) {
     headers.set("CDN-Cache-Control", "private, no-store");
     headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");

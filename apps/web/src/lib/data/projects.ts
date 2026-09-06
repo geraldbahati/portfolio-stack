@@ -2,41 +2,22 @@ import type { PublishedCaseStudy, PublishedProject } from "@portfolio-stack/api/
 
 import { orpc } from "./orpc";
 import { withPublicCache } from "./public-cache";
+import { fetchPublicData } from "./public-request";
 
 const PROJECTS_FETCH_MS = 4000;
 
-async function withTimeout<T>(promise: Promise<T>, message: string) {
-  let timeoutId: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(message)), PROJECTS_FETCH_MS);
-      }),
-    ]);
-  } finally {
-    if (timeoutId !== undefined) {
-      clearTimeout(timeoutId);
-    }
-  }
+export function loadPublishedProjects(): Promise<PublishedProject[]> {
+  return withPublicCache("projects:published", () =>
+    fetchPublicData("projects:published", PROJECTS_FETCH_MS, (signal) =>
+      orpc.projects.listPublished(undefined, { signal }),
+    ),
+  );
 }
 
-export async function loadPublishedProjects(): Promise<PublishedProject[]> {
-  try {
-    return await withPublicCache("projects:published", () =>
-      withTimeout(orpc.projects.listPublished(), "projects timeout"),
-    );
-  } catch {
-    return [];
-  }
-}
-
-export async function loadPublishedProject(slug: string): Promise<PublishedCaseStudy | null> {
-  try {
-    return await withPublicCache(`projects:slug:${slug}`, () =>
-      withTimeout(orpc.projects.getBySlug({ slug }), "project timeout"),
-    );
-  } catch {
-    return null;
-  }
+export function loadPublishedProject(slug: string): Promise<PublishedCaseStudy | null> {
+  return withPublicCache(`projects:slug:${slug}`, () =>
+    fetchPublicData("projects:detail", PROJECTS_FETCH_MS, (signal) =>
+      orpc.projects.getBySlug({ slug }, { signal }),
+    ),
+  );
 }

@@ -8,117 +8,123 @@ import { siteImages } from "./vite-plugin-site-images";
 const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
 const isE2e = process.env.E2E_MODE === "true";
 
-// https://astro.build/config
-export default defineConfig({
-  output: "server",
-  prefetch: {
-    prefetchAll: false,
-    defaultStrategy: "hover",
-  },
-  build: {
-    inlineStylesheets: "always",
-  },
-  integrations: [
-    sentry({
-      telemetry: false,
-      enabled: { client: false, server: true },
-      bundleSizeOptimizations: {
-        excludeDebugStatements: true,
-        excludeReplayIframe: true,
-        excludeReplayShadowDom: true,
-        excludeReplayWorker: true,
-      },
-      org: process.env.SENTRY_ORG || "artlife-5r",
-      project: process.env.SENTRY_PROJECT || "portfolio",
-      authToken: sentryAuthToken,
-      sourcemaps: { disable: !sentryAuthToken },
-    }),
-    {
-      name: "portfolio:keep-page-script",
-      hooks: {
-        "astro:config:setup"({ injectScript }) {
-          injectScript("page", "void 0;");
-        },
-      },
-    },
-  ],
-  env: {
-    schema: {
-      PUBLIC_SERVER_URL: envField.string({
-        access: "public",
-        context: "client",
-        default: "http://localhost:3000",
-      }),
-      PUBLIC_POSTHOG_KEY: envField.string({
-        access: "public",
-        context: "client",
-        optional: true,
-      }),
-      PUBLIC_POSTHOG_HOST: envField.string({
-        access: "public",
-        context: "client",
-        default: "/gbx",
-      }),
-      PUBLIC_SENTRY_DSN: envField.string({
-        access: "public",
-        context: "client",
-        optional: true,
-      }),
-      PUBLIC_TURNSTILE_SITE_KEY: envField.string({
-        access: "public",
-        context: "client",
-        optional: true,
-      }),
-      PUBLIC_STREAM_CUSTOMER: envField.string({
-        access: "public",
-        context: "client",
-        default: "customer-pdxnd9di8ybc2kur.cloudflarestream.com",
-      }),
-      PUBLIC_MEDIA_ORIGIN: envField.string({
-        access: "public",
-        context: "client",
-        default: "https://media.geraldbahati.dev",
-      }),
-      PUBLIC_IMAGE_TRANSFORM_ZONE: envField.string({
-        access: "public",
-        context: "client",
-        default: "media.geraldbahati.dev",
-      }),
-      PUBLIC_GOOGLE_SITE_VERIFICATION: envField.string({
-        access: "public",
-        context: "client",
-        optional: true,
-      }),
-    },
-  },
-  image: {
-    domains: ["media.geraldbahati.dev"],
-    remotePatterns: [{ protocol: "https", hostname: "media.geraldbahati.dev" }],
-  },
-  vite: {
-    cacheDir: isE2e ? "node_modules/.vite-e2e" : "node_modules/.vite",
-    // Vite's startup scan misses these: each is reached either through a
-    // dynamic import or through a workspace package it treats as source, so
-    // they are only discovered once a browser actually requests the module.
-    // Discovering a dependency mid-session triggers a re-optimize and a
-    // program reload, which aborts every request already in flight — the
-    // 502s and "failed to fetch dynamically imported module" errors that made
-    // the end-to-end suite flaky. Naming them here pre-bundles them at
-    // startup, so no reload happens after the server reports ready.
-    optimizeDeps: {
-      include: [
-        "@orpc/client",
-        "@orpc/client/fetch",
-        "@sentry/astro",
-        "better-auth/client",
-        "hls.js",
-        "posthog-js",
-        "zod",
-      ],
+/** @param {{ uploadSourceMaps?: boolean }} [options] */
+export function createAstroConfig({ uploadSourceMaps = true } = {}) {
+  return defineConfig({
+    output: "server",
+    // Browser checks exercise the portfolio, without the development audit overlay.
+    devToolbar: { enabled: !isE2e },
+    prefetch: {
+      prefetchAll: false,
+      defaultStrategy: "hover",
     },
     build: {
-      chunkSizeWarningLimit: 600,
+      inlineStylesheets: "always",
     },
-    plugins: [siteImages(), tailwindcss()],
-  },
-});
+    integrations: [
+      sentry({
+        telemetry: false,
+        enabled: { client: false, server: true },
+        bundleSizeOptimizations: {
+          excludeDebugStatements: true,
+          excludeReplayIframe: true,
+          excludeReplayShadowDom: true,
+          excludeReplayWorker: true,
+        },
+        org: process.env.SENTRY_ORG || "artlife-5r",
+        project: process.env.SENTRY_PROJECT || "portfolio",
+        authToken: sentryAuthToken,
+        sourcemaps: { disable: !uploadSourceMaps || !sentryAuthToken },
+      }),
+      {
+        name: "portfolio:keep-page-script",
+        hooks: {
+          "astro:config:setup"({ injectScript }) {
+            injectScript("page", "void 0;");
+          },
+        },
+      },
+    ],
+    env: {
+      schema: {
+        PUBLIC_SERVER_URL: envField.string({
+          access: "public",
+          context: "client",
+          default: "http://localhost:3000",
+        }),
+        PUBLIC_POSTHOG_KEY: envField.string({
+          access: "public",
+          context: "client",
+          optional: true,
+        }),
+        PUBLIC_POSTHOG_HOST: envField.string({
+          access: "public",
+          context: "client",
+          default: "/gbx",
+        }),
+        PUBLIC_SENTRY_DSN: envField.string({
+          access: "public",
+          context: "client",
+          optional: true,
+        }),
+        PUBLIC_TURNSTILE_SITE_KEY: envField.string({
+          access: "public",
+          context: "client",
+          optional: true,
+        }),
+        PUBLIC_STREAM_CUSTOMER: envField.string({
+          access: "public",
+          context: "client",
+          default: "customer-pdxnd9di8ybc2kur.cloudflarestream.com",
+        }),
+        PUBLIC_MEDIA_ORIGIN: envField.string({
+          access: "public",
+          context: "client",
+          default: "https://media.geraldbahati.dev",
+        }),
+        PUBLIC_IMAGE_TRANSFORM_ZONE: envField.string({
+          access: "public",
+          context: "client",
+          default: "media.geraldbahati.dev",
+        }),
+        PUBLIC_GOOGLE_SITE_VERIFICATION: envField.string({
+          access: "public",
+          context: "client",
+          optional: true,
+        }),
+      },
+    },
+    image: {
+      domains: ["media.geraldbahati.dev"],
+      remotePatterns: [{ protocol: "https", hostname: "media.geraldbahati.dev" }],
+    },
+    vite: {
+      cacheDir: isE2e ? "node_modules/.vite-e2e" : "node_modules/.vite",
+      // Vite's startup scan misses these: each is reached either through a
+      // dynamic import or through a workspace package it treats as source, so
+      // they are only discovered once a browser actually requests the module.
+      // Discovering a dependency mid-session triggers a re-optimize and a
+      // program reload, which aborts every request already in flight — the
+      // 502s and "failed to fetch dynamically imported module" errors that made
+      // the end-to-end suite flaky. Naming them here pre-bundles them at
+      // startup, so no reload happens after the server reports ready.
+      optimizeDeps: {
+        include: [
+          "@orpc/client",
+          "@orpc/client/fetch",
+          "@sentry/astro",
+          "better-auth/client",
+          "hls.js",
+          "@portfolio-stack/analytics > posthog-js",
+          "zod",
+        ],
+      },
+      build: {
+        chunkSizeWarningLimit: 600,
+      },
+      plugins: [siteImages(), tailwindcss()],
+    },
+  });
+}
+
+export default createAstroConfig();

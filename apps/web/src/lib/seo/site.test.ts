@@ -30,9 +30,22 @@ describe("canonicalRedirectFor", () => {
     expect(canonicalRedirectFor(new URL("https://www.geraldbahati.dev/projects"))).toBeNull();
   });
 
+  it("redirects the legacy privacy-policy URL to the current privacy page", () => {
+    expect(
+      canonicalRedirectFor(new URL("https://www.geraldbahati.dev/privacy-policy?source=footer")),
+    ).toBe("https://www.geraldbahati.dev/privacy?source=footer");
+  });
+
+  it("collapses the legacy path and apex alias into one redirect", () => {
+    expect(canonicalRedirectFor(new URL("https://geraldbahati.dev/privacy-policy"))).toBe(
+      "https://www.geraldbahati.dev/privacy",
+    );
+  });
+
   it("leaves development and preview hosts alone", () => {
     expect(canonicalRedirectFor(new URL("http://localhost:4321/"))).toBeNull();
     expect(canonicalRedirectFor(new URL("http://localhost:4421/contact"))).toBeNull();
+    expect(canonicalRedirectFor(new URL("http://localhost:4321/privacy-policy"))).toBeNull();
     expect(
       canonicalRedirectFor(new URL("https://portfolio-stack-web-production.workers.dev/")),
     ).toBeNull();

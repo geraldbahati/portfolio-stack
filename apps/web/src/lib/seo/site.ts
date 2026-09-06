@@ -139,16 +139,22 @@ export const OG_IMAGE_URL = toAbsoluteSiteUrl(OG_IMAGE.path);
 
 /** Hostnames attached to the Worker that redirect to {@link SITE_URL}. */
 export const ALIAS_HOSTS = ["geraldbahati.dev"] as const;
+const CANONICAL_HOST = new URL(SITE_URL).hostname;
+const LEGACY_PUBLIC_PATHS = new Map([["/privacy-policy", "/privacy"]]);
 
-/** Canonical URL for an alias request, or `null` if already canonical. Path
- * and query are preserved so deep links survive the redirect. */
+/** Canonical URL for an alias or a retired public path, or `null` when no
+ * redirect is needed. Queries are preserved so deep links survive. */
 export function canonicalRedirectFor(url: URL): string | null {
-  if (!ALIAS_HOSTS.includes(url.hostname as (typeof ALIAS_HOSTS)[number])) {
+  const isAliasHost = ALIAS_HOSTS.includes(url.hostname as (typeof ALIAS_HOSTS)[number]);
+  const isPublicHost = url.hostname === CANONICAL_HOST || isAliasHost;
+  const legacyPath = isPublicHost ? LEGACY_PUBLIC_PATHS.get(url.pathname) : undefined;
+
+  if (!isAliasHost && !legacyPath) {
     return null;
   }
 
   const target = new URL(SITE_URL);
-  target.pathname = url.pathname;
+  target.pathname = legacyPath ?? url.pathname;
   target.search = url.search;
   return target.href;
 }

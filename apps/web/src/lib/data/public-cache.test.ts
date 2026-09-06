@@ -52,3 +52,33 @@ describe("withPublicCache", () => {
     expect(load).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("stale public data", () => {
+  it("does not extend a negative lookup during an outage", async () => {
+    vi.useFakeTimers();
+    const load = vi.fn().mockResolvedValueOnce(null).mockRejectedValue(new Error("offline"));
+    expect(await withPublicCache("missing", load)).toBeNull();
+    vi.advanceTimersByTime(60_001);
+    await expect(withPublicCache("missing", load)).rejects.toThrow("offline");
+  });
+
+  it("replaces stale content when a project is unpublished", async () => {
+    vi.useFakeTimers();
+    const load = vi
+      .fn()
+      .mockResolvedValueOnce({ title: "Old" })
+      .mockResolvedValueOnce(null)
+      .mockRejectedValue(new Error("offline"));
+    await withPublicCache("removed", load);
+    vi.advanceTimersByTime(60_001);
+    expect(await withPublicCache("removed", load)).toBeNull();
+    vi.advanceTimersByTime(60_001);
+    await expect(withPublicCache("removed", load)).rejects.toThrow("offline");
+  });
+
+  it("disables stale retention when the TTL is zero", async () => {
+    const load = vi.fn().mockResolvedValueOnce("old").mockRejectedValue(new Error("offline"));
+    await withPublicCache("development", load, 0);
+    await expect(withPublicCache("development", load, 0)).rejects.toThrow("offline");
+  });
+});

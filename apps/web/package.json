@@ -10,16 +10,17 @@
     "dev:bare": "astro dev"
   },
   "dependencies": {
+    "@fontsource-variable/syne": "^5.2.8",
     "@orpc/client": "catalog:",
     "@portfolio-stack/analytics": "workspace:*",
     "@portfolio-stack/api": "workspace:*",
     "@portfolio-stack/media": "workspace:*",
-    "@fontsource-variable/syne": "^5.2.8",
     "@sentry/astro": "^10.38.0",
     "astro": "^7.1.5",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "hls.js": "^1.6.15",
+    "sanitize-html": "^2.17.7",
     "sharp": "^0.34.5",
     "zod": "catalog:"
   },
@@ -29,6 +30,7 @@
     "@cloudflare/workers-types": "catalog:",
     "@portfolio-stack/config": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/sanitize-html": "^2.16.1",
     "tailwindcss": "^4.3.3",
     "typescript": "catalog:",
     "vite": "^8.2.2"

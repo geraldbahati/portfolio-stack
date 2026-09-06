@@ -58,6 +58,12 @@ setup("authenticate the isolated admin account", async ({ page, request }) => {
     "/privacy",
     "/imprint",
     "/definitely-not-a-real-route",
+    "/admin",
+    "/admin/activity",
+    "/admin/projects",
+    "/admin/messages",
+    "/admin/media",
+    "/admin/settings",
   ];
 
   let consecutiveCleanPasses = 0;
