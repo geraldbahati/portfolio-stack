@@ -96,6 +96,24 @@ describe("contactPageJsonLd", () => {
 });
 
 describe("projectWorkJsonLd", () => {
+  it("does not misrepresent project creation as the video's upload date", () => {
+    const input = {
+      slug: "demo",
+      name: "Demo",
+      dateCreated: "2026-01-01T00:00:00Z",
+      videoUrl: "https://media.example/demo.m3u8",
+      videoPoster: "https://media.example/demo.jpg",
+    };
+    expect(JSON.stringify(projectWorkJsonLd(input))).not.toContain('"@type":"VideoObject"');
+    expect(
+      JSON.stringify(projectWorkJsonLd({ ...input, videoUploadDate: "invalid" })),
+    ).not.toContain('"@type":"VideoObject"');
+    const published = JSON.stringify(
+      projectWorkJsonLd({ ...input, videoUploadDate: "2025-12-15T12:00:00Z" }),
+    );
+    expect(published).toContain('"uploadDate":"2025-12-15T12:00:00Z"');
+    expect(published).toContain('"dateCreated":"2026-01-01T00:00:00Z"');
+  });
   it("nests a Review only when a testimonial exists", () => {
     const without = JSON.stringify(
       projectWorkJsonLd({
@@ -128,14 +146,14 @@ describe("projectWorkJsonLd", () => {
 });
 
 describe("projectPageCopy", () => {
-  it("pads short taglines to a usable meta description", () => {
+  it("preserves short specific descriptions without filler", () => {
     const copy = projectPageCopy({
       title: "Webline Store",
       tagline: "A catalogue that loads before you finish clicking",
     });
     expect(copy.heading).toBe("Webline Store: What I Shipped");
     expect(copy.title).toContain("Gerald Bahati");
-    expect(copy.description.length).toBeGreaterThanOrEqual(100);
+    expect(copy.description).toBe("A catalogue that loads before you finish clicking");
   });
 });
 

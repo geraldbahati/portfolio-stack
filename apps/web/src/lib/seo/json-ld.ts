@@ -312,6 +312,8 @@ export type ProjectWorkInput = {
   client?: string | null;
   videoUrl?: string | null;
   videoPoster?: string | null;
+  /** Actual video publication time, not the case-study database creation time. */
+  videoUploadDate?: string;
   testimonial?: {
     quote: string;
     authorName: string;
@@ -353,14 +355,20 @@ export function projectWorkJsonLd(input: ProjectWorkInput) {
     ...(input.dateModified ? { dateModified: input.dateModified } : {}),
   };
 
-  if (videoUrl) {
+  // Do not manufacture required video metadata from unrelated project timestamps.
+  if (
+    videoUrl &&
+    videoPoster &&
+    input.videoUploadDate &&
+    Number.isFinite(Date.parse(input.videoUploadDate))
+  ) {
     work.video = {
       "@type": "VideoObject",
       name: input.name,
       description: input.description,
       contentUrl: videoUrl,
       thumbnailUrl: videoPoster,
-      ...(input.dateCreated ? { uploadDate: input.dateCreated } : {}),
+      uploadDate: input.videoUploadDate,
     };
   }
 

@@ -18,6 +18,12 @@ import {
 
 type Database = ReturnType<typeof createDb>;
 
+// Keep the public sitemap, article metadata, and structured data in sync with
+// edits to every case-study section, including removal of the final item.
+function touchProject(db: Database, projectId: string, updatedAt: Date) {
+  return db.update(project).set({ updatedAt }).where(eq(project.id, projectId));
+}
+
 export type AdminProjectStatus = "all" | "published" | "draft";
 
 export type AdminProjectWriteInput = {
@@ -293,7 +299,8 @@ export async function replaceAdminProjectMetrics(
     metadata: { count: items.length },
     createdAt: now,
   });
-  if (items.length === 0) return db.batch([remove, audit]);
+  const touch = touchProject(db, projectId, now);
+  if (items.length === 0) return db.batch([remove, touch, audit]);
   return db.batch([
     remove,
     db.insert(projectMetrics).values(
@@ -306,6 +313,7 @@ export async function replaceAdminProjectMetrics(
         updatedAt: now,
       })),
     ),
+    touch,
     audit,
   ]);
 }
@@ -327,7 +335,8 @@ export async function replaceAdminProjectChallenges(
     metadata: { count: items.length },
     createdAt: now,
   });
-  if (items.length === 0) return db.batch([remove, audit]);
+  const touch = touchProject(db, projectId, now);
+  if (items.length === 0) return db.batch([remove, touch, audit]);
   return db.batch([
     remove,
     db.insert(projectChallenges).values(
@@ -340,6 +349,7 @@ export async function replaceAdminProjectChallenges(
         updatedAt: now,
       })),
     ),
+    touch,
     audit,
   ]);
 }
@@ -361,7 +371,8 @@ export async function replaceAdminProjectGallery(
     metadata: { count: items.length },
     createdAt: now,
   });
-  if (items.length === 0) return db.batch([remove, audit]);
+  const touch = touchProject(db, projectId, now);
+  if (items.length === 0) return db.batch([remove, touch, audit]);
   return db.batch([
     remove,
     db.insert(projectGallery).values(
@@ -374,6 +385,7 @@ export async function replaceAdminProjectGallery(
         updatedAt: now,
       })),
     ),
+    touch,
     audit,
   ]);
 }
@@ -396,6 +408,7 @@ export async function saveAdminProjectTestimonial(
   if (!testimonial) {
     return db.batch([
       db.delete(projectTestimonials).where(eq(projectTestimonials.projectId, projectId)),
+      touchProject(db, projectId, now),
       audit,
     ]);
   }
@@ -407,6 +420,7 @@ export async function saveAdminProjectTestimonial(
         target: projectTestimonials.projectId,
         set: { ...testimonial, updatedAt: now },
       }),
+    touchProject(db, projectId, now),
     audit,
   ]);
 }
@@ -436,6 +450,7 @@ export async function saveAdminProjectPresentation(
           updatedAt: now,
         },
       }),
+    touchProject(db, projectId, now),
     db.insert(auditLog).values({
       id: crypto.randomUUID(),
       actorEmail,
