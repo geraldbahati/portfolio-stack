@@ -3,6 +3,7 @@ import { PUBLIC_IMAGE_TRANSFORM_ZONE } from "astro:env/client";
 import ProjectDetail from "../../features/project-detail/ProjectDetail.astro";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import { loadPublishedProject } from "../../lib/data/projects";
+import * as publicData from "../../lib/data/public-request";
 import { projectHeroImage, projectOgImage } from "../../lib/images/remote-image";
 import { projectWorkJsonLd } from "../../lib/seo/json-ld";
 import { projectPageCopy } from "../../lib/seo/page-copy";
@@ -14,7 +15,13 @@ if (!slug) {
   return Astro.rewrite("/404");
 }
 
-const study = await loadPublishedProject(slug);
+let study: Awaited<ReturnType<typeof loadPublishedProject>>;
+try {
+  study = await loadPublishedProject(slug);
+} catch (error) {
+  if (!(error instanceof publicData.PublicDataUnavailableError)) throw error;
+  return publicData.serviceUnavailable(await Astro.rewrite("/500"));
+}
 
 if (!study) {
   Astro.response.status = 404;

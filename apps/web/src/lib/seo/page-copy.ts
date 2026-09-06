@@ -73,6 +73,34 @@ export const INDEXABLE_PATHS = Object.values(PAGE_COPY)
   .filter((page) => page.indexable)
   .map((page) => page.path);
 
+const PROJECT_DESCRIPTION_MIN = 100;
+const PROJECT_DESCRIPTION_MAX = 160;
+const SEARCH_TITLE_MAX = 60;
+
+function longestCopy(values: readonly (string | null | undefined)[], fallback: string) {
+  const longest = values.reduce<string>((current, value) => {
+    const candidate = value?.trim() ?? "";
+    return candidate.length > current.length ? candidate : current;
+  }, "");
+
+  return longest || fallback;
+}
+
+function projectDescription(value: string) {
+  const expanded =
+    value.length >= PROJECT_DESCRIPTION_MIN
+      ? value
+      : `${value}. A case study of production work I shipped — architecture, constraints, and the result.`;
+
+  if (expanded.length <= PROJECT_DESCRIPTION_MAX) return expanded;
+
+  const clipped = expanded.slice(0, PROJECT_DESCRIPTION_MAX - 1).trimEnd();
+  const lastWordBoundary = clipped.lastIndexOf(" ");
+  const end = lastWordBoundary >= PROJECT_DESCRIPTION_MIN ? lastWordBoundary : clipped.length;
+
+  return `${clipped.slice(0, end).trimEnd()}…`;
+}
+
 export function projectPageCopy(input: {
   title: string;
   tagline?: string | null;
@@ -82,18 +110,15 @@ export function projectPageCopy(input: {
   client?: string | null;
 }) {
   const heading = `${input.title}: What I Shipped`;
-  const base =
-    input.tagline?.trim() || input.description?.trim() || `What I shipped for ${input.title}`;
-  const description =
-    base.length >= 100
-      ? base
-      : `${base}. A case study of production work I shipped — architecture, constraints, and the result.`;
+  const description = projectDescription(
+    longestCopy([input.tagline, input.description], `What I shipped for ${input.title}`),
+  );
+  const searchTitle = `${input.title} Case Study`;
+  const brandedTitle = `${searchTitle} | ${SITE_NAME}`;
 
   return {
     heading,
-    // The brand suffix is dropped once the project name alone pushes the title
-    // past the SERP width; the name is the part that earns the click.
-    title: heading.length > 42 ? heading : `${heading} | ${SITE_NAME}`,
+    title: brandedTitle.length <= SEARCH_TITLE_MAX ? brandedTitle : searchTitle,
     description,
     keywords: [
       input.title,

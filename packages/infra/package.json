@@ -7,7 +7,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "dev": "alchemy dev",
+    "dev": "bun --bun run alchemy dev",
     "deploy": "alchemy deploy",
     "destroy": "alchemy destroy"
   },

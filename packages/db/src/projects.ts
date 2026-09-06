@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gt, lt, or } from "drizzle-orm";
 
 import { createDb } from "./index";
 import {
@@ -21,51 +21,74 @@ export function listPublishedProjects(db: Database = createDb()) {
 }
 
 export async function getPublishedProjectBySlug(slug: string, db: Database = createDb()) {
-  const [row] = await db
-    .select()
+  // These two relations are one-to-one: joining them cannot multiply rows.
+  const [record] = await db
+    .select({ project, details: projectDetails, testimonial: projectTestimonials })
     .from(project)
+    .leftJoin(projectDetails, eq(projectDetails.projectId, project.id))
+    .leftJoin(projectTestimonials, eq(projectTestimonials.projectId, project.id))
     .where(and(eq(project.id, slug), eq(project.isPublished, true)))
     .limit(1);
 
-  if (!row) {
-    return null;
-  }
+  if (!record) return null;
 
-  const [published, detailsRows, gallery, metrics, challenges, testimonialRows] = await Promise.all(
-    [
-      listPublishedProjects(db),
-      db.select().from(projectDetails).where(eq(projectDetails.projectId, slug)).limit(1),
-      db
-        .select()
-        .from(projectGallery)
-        .where(eq(projectGallery.projectId, slug))
-        .orderBy(asc(projectGallery.sortOrder), asc(projectGallery.id)),
-      db
-        .select()
-        .from(projectMetrics)
-        .where(eq(projectMetrics.projectId, slug))
-        .orderBy(asc(projectMetrics.sortOrder), asc(projectMetrics.id)),
-      db
-        .select()
-        .from(projectChallenges)
-        .where(eq(projectChallenges.projectId, slug))
-        .orderBy(asc(projectChallenges.sortOrder), asc(projectChallenges.id)),
-      db.select().from(projectTestimonials).where(eq(projectTestimonials.projectId, slug)).limit(1),
-    ],
-  );
-
-  const index = published.findIndex((entry) => entry.id === slug);
-  const previous = index > 0 ? published[index - 1] : undefined;
-  const next = index >= 0 && index < published.length - 1 ? published[index + 1] : undefined;
+  const row = record.project;
+  // Fetch only the immediate neighbors, including stable id ordering for ties.
+  // D1 executes the remaining reads in one batch instead of five HTTP trips.
+  const [previousRows, nextRows, gallery, metrics, challenges] = await db.batch([
+    db
+      .select({ id: project.id, title: project.title })
+      .from(project)
+      .where(
+        and(
+          eq(project.isPublished, true),
+          or(
+            lt(project.sortOrder, row.sortOrder),
+            and(eq(project.sortOrder, row.sortOrder), lt(project.id, slug)),
+          ),
+        ),
+      )
+      .orderBy(desc(project.sortOrder), desc(project.id))
+      .limit(1),
+    db
+      .select({ id: project.id, title: project.title })
+      .from(project)
+      .where(
+        and(
+          eq(project.isPublished, true),
+          or(
+            gt(project.sortOrder, row.sortOrder),
+            and(eq(project.sortOrder, row.sortOrder), gt(project.id, slug)),
+          ),
+        ),
+      )
+      .orderBy(asc(project.sortOrder), asc(project.id))
+      .limit(1),
+    db
+      .select()
+      .from(projectGallery)
+      .where(eq(projectGallery.projectId, slug))
+      .orderBy(asc(projectGallery.sortOrder), asc(projectGallery.id)),
+    db
+      .select()
+      .from(projectMetrics)
+      .where(eq(projectMetrics.projectId, slug))
+      .orderBy(asc(projectMetrics.sortOrder), asc(projectMetrics.id)),
+    db
+      .select()
+      .from(projectChallenges)
+      .where(eq(projectChallenges.projectId, slug))
+      .orderBy(asc(projectChallenges.sortOrder), asc(projectChallenges.id)),
+  ]);
 
   return {
     project: row,
-    details: detailsRows[0] ?? null,
+    details: record.details,
     gallery,
     metrics,
     challenges,
-    testimonial: testimonialRows[0] ?? null,
-    previous: previous ? { id: previous.id, title: previous.title } : null,
-    next: next ? { id: next.id, title: next.title } : null,
+    testimonial: record.testimonial,
+    previous: previousRows[0] ?? null,
+    next: nextRows[0] ?? null,
   };
 }

@@ -24,5 +24,22 @@ describe("verifyTurnstileToken", () => {
       true,
     );
     expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(fetchImpl.mock.calls[0]?.[1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("fails closed when verification times out or returns invalid JSON", async () => {
+    const fetchImpl = vi.fn().mockRejectedValue(new Error("timeout"));
+    await expect(verifyTurnstileToken({ secret: "secret", token: "tok", fetchImpl })).resolves.toBe(
+      false,
+    );
+    fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => {
+        throw new Error("invalid json");
+      },
+    });
+    await expect(verifyTurnstileToken({ secret: "secret", token: "tok", fetchImpl })).resolves.toBe(
+      false,
+    );
   });
 });

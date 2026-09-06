@@ -125,7 +125,11 @@ describe("bindProjectMedia", () => {
     const visibility = TestIntersectionObserver.instances[1];
 
     expect(proximity?.options?.rootMargin).toBe("50% 25%");
-    expect(preloadHlsMock).toHaveBeenCalledOnce();
+    expect(preloadHlsMock).not.toHaveBeenCalled();
+    expect(initHlsMock).not.toHaveBeenCalled();
+
+    proximity?.trigger(card, 0, false);
+    expect(initHlsMock).not.toHaveBeenCalled();
 
     proximity?.trigger(card, 0.01, true);
     await Promise.resolve();
@@ -199,6 +203,7 @@ describe("bindProjectMedia", () => {
 
     expect(video.getAttribute("src")).toBe("https://video.test/manifest.m3u8");
     expect(video.play).toHaveBeenCalledOnce();
+    expect(preloadHlsMock).not.toHaveBeenCalled();
 
     proximity?.trigger(card, 0, false);
     expect(video.getAttribute("src")).not.toBeNull();
@@ -266,6 +271,7 @@ describe("bindProjectMedia", () => {
 
     expect(initHlsMock).toHaveBeenCalledTimes(2);
     expect(initHlsMock.mock.calls[1]?.[4]).toEqual({ forceHlsJs: true });
+    expect(preloadHlsMock).toHaveBeenCalledOnce();
     expect(video.load).toHaveBeenCalledOnce();
     expect(hls.startLoad).toHaveBeenCalledOnce();
     expect(video.play).toHaveBeenCalledTimes(2);

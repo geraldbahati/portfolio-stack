@@ -20,15 +20,18 @@ export async function verifyTurnstileToken(options: {
   }
 
   const fetchImpl = options.fetchImpl ?? fetch;
-  const response = await fetchImpl("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-    method: "POST",
-    body,
-  });
-
-  if (!response.ok) {
+  try {
+    const response = await fetchImpl("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body,
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!response.ok) {
+      return false;
+    }
+    const data = (await response.json()) as { success?: boolean };
+    return data.success === true;
+  } catch {
     return false;
   }
-
-  const data = (await response.json()) as { success?: boolean };
-  return data.success === true;
 }

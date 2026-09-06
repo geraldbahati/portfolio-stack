@@ -330,10 +330,6 @@ export function bindProjectMedia(root: HTMLElement) {
     players.set(card, player);
   }
 
-  if (players.size > 0 && playbackEnabled && !reducedMotion.matches) {
-    void preloadHls().catch(() => undefined);
-  }
-
   const releaseNativeSource = (player: CardPlayer) => {
     if (!player.nativeHls || player.nearby || player.visible) {
       return;

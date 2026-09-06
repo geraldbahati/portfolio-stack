@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 
 import { loadPublishedProjects } from "../lib/data/projects";
+import { PublicDataUnavailableError, serviceUnavailable } from "../lib/data/public-request";
 import { renderLlmsTxt } from "../lib/seo/llms-txt";
 
 // Rendered per request so the work list tracks whatever is published, the
@@ -8,7 +9,13 @@ import { renderLlmsTxt } from "../lib/seo/llms-txt";
 export const prerender = false;
 
 export const GET: APIRoute = async () => {
-  const projects = await loadPublishedProjects();
+  let projects: Awaited<ReturnType<typeof loadPublishedProjects>>;
+  try {
+    projects = await loadPublishedProjects();
+  } catch (error) {
+    if (!(error instanceof PublicDataUnavailableError)) throw error;
+    return serviceUnavailable(new Response("Service temporarily unavailable"));
+  }
 
   return new Response(
     renderLlmsTxt(

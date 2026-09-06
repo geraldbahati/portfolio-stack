@@ -53,8 +53,32 @@ describe("projectPageCopy", () => {
     });
 
     expect(copy.heading).toBe("Webline Store: What I Shipped");
-    expect(copy.title).toBe("Webline Store: What I Shipped | Gerald Bahati");
+    expect(copy.title).toBe("Webline Store Case Study | Gerald Bahati");
     expect(copy.description.length).toBeGreaterThanOrEqual(100);
+    expect(copy.description.length).toBeLessThanOrEqual(160);
+  });
+
+  it("uses a substantive project summary instead of a shorter marketing tagline", () => {
+    const summary =
+      "A Nairobi technology platform built with a fast storefront, resilient payments, edge caching, and an independently deployed catalogue.";
+    const copy = projectPageCopy({
+      title: "Webline Store",
+      tagline: "Shopping without the wait",
+      description: summary,
+    });
+
+    expect(copy.description).toBe(summary);
+  });
+
+  it("keeps long project summaries inside the search snippet band", () => {
+    const copy = projectPageCopy({
+      title: "Webline Store",
+      description:
+        "A production e-commerce platform with a large catalogue, resilient payments, edge caching, accessible product discovery, inventory workflows, analytics, operational tooling, and a deliberately long summary that should not be cut off in the middle of a search result.",
+    });
+
+    expect(copy.description.length).toBeLessThanOrEqual(160);
+    expect(copy.description.endsWith("…")).toBe(true);
   });
 
   it("drops the brand suffix once the project name alone fills the title", () => {
@@ -64,9 +88,7 @@ describe("projectPageCopy", () => {
     });
 
     expect(copy.title).not.toContain("| Gerald Bahati");
-    expect(copy.title).toBe(
-      "Real-Time Collaboration Platform for Distributed Teams: What I Shipped",
-    );
+    expect(copy.title).toBe("Real-Time Collaboration Platform for Distributed Teams Case Study");
   });
 
   it("folds the case study's own vocabulary into the keywords", () => {

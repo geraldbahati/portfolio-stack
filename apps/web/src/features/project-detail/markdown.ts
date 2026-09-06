@@ -1,6 +1,7 @@
 import { marked } from "marked";
+import sanitize from "sanitize-html";
 
-const ALLOWED_TAGS = new Set([
+const ALLOWED_TAGS = [
   "p",
   "h2",
   "h3",
@@ -22,33 +23,27 @@ const ALLOWED_TAGS = new Set([
   "td",
   "hr",
   "br",
-]);
+];
 
 export function sanitizeHtml(html: string) {
-  return html
-    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, "")
-    .replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (tag, name: string) => {
-      const lower = name.toLowerCase();
-      if (!ALLOWED_TAGS.has(lower)) {
-        return "";
-      }
-      if (lower === "a") {
-        const href = tag.match(/\bhref\s*=\s*(["'])(.*?)\1/i)?.[2] ?? "";
-        if (!href || href.startsWith("javascript:")) {
-          return tag.startsWith("</") ? "</a>" : "<a>";
-        }
-        const safe =
+  return sanitize(html, {
+    allowedTags: ALLOWED_TAGS,
+    allowedAttributes: { a: ["href", "rel"] },
+    allowedSchemes: ["http", "https"],
+    parseStyleAttributes: false,
+    transformTags: {
+      a: (tagName, attributes) => {
+        const href = attributes.href ?? "";
+        const allowed =
           href.startsWith("http://") || href.startsWith("https://") || href.startsWith("/");
-        if (!safe) {
-          return tag.startsWith("</") ? "</a>" : "<a>";
-        }
-        return tag.startsWith("</")
-          ? "</a>"
-          : `<a href="${href.replaceAll('"', "&quot;")}" rel="noopener noreferrer">`;
-      }
-      return tag.startsWith("</") ? `</${lower}>` : `<${lower}>`;
-    })
-    .replace(/\son\w+\s*=\s*(["']).*?\1/gi, "");
+        const attribs: Record<string, string> = allowed ? { href, rel: "noopener noreferrer" } : {};
+        return {
+          tagName,
+          attribs,
+        };
+      },
+    },
+  });
 }
 
 export function renderMarkdown(source: string | null | undefined) {
