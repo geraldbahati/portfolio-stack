@@ -1,20 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import { INDEXABLE_PATHS, PAGE_COPY, projectPageCopy } from "./page-copy";
+import { PROJECT_SEARCH_COPY } from "./project-search-copy";
 
 const entries = Object.entries(PAGE_COPY);
 
 describe("page metadata bands", () => {
-  it.each(entries)("%s has a title Google can render whole", (_name, page) => {
-    // Google truncates around 580 CSS pixels; 60 characters is the usual
-    // safe proxy for a title in the default SERP font.
+  it.each(entries)("%s follows the site's concise title guideline", (_name, page) => {
+    // An editorial target, not a guarantee about Google's displayed title.
     expect(page.title.length).toBeGreaterThan(10);
     expect(page.title.length).toBeLessThanOrEqual(60);
   });
 
   it.each(entries)("%s has a description in the snippet band", (_name, page) => {
-    // Under ~110 characters Google tends to substitute its own snippet;
-    // over ~160 it truncates mid-sentence.
+    // Editorial targets only; Google can choose a query-specific snippet.
     expect(page.description.length).toBeGreaterThanOrEqual(110);
     expect(page.description.length).toBeLessThanOrEqual(160);
   });
@@ -46,7 +45,7 @@ describe("INDEXABLE_PATHS", () => {
 });
 
 describe("projectPageCopy", () => {
-  it("pads a short tagline up to a usable snippet length", () => {
+  it("keeps a relevant short tagline without generic padding", () => {
     const copy = projectPageCopy({
       title: "Webline Store",
       tagline: "A catalogue that loads before you finish clicking",
@@ -54,8 +53,7 @@ describe("projectPageCopy", () => {
 
     expect(copy.heading).toBe("Webline Store: What I Shipped");
     expect(copy.title).toBe("Webline Store Case Study | Gerald Bahati");
-    expect(copy.description.length).toBeGreaterThanOrEqual(100);
-    expect(copy.description.length).toBeLessThanOrEqual(160);
+    expect(copy.description).toBe("A catalogue that loads before you finish clicking");
   });
 
   it("uses a substantive project summary instead of a shorter marketing tagline", () => {
@@ -68,6 +66,41 @@ describe("projectPageCopy", () => {
     });
 
     expect(copy.description).toBe(summary);
+  });
+
+  it("prefers the factual summary even when a promotional tagline is longer", () => {
+    expect(
+      projectPageCopy({
+        title: "Booking",
+        description: "Guest appointments with M-Pesa payments.",
+        tagline:
+          "A very long promotional tagline that has less information about the actual project.",
+      }).description,
+    ).toBe("Guest appointments with M-Pesa payments.");
+  });
+
+  it("uses unique editorial copy for each existing case study", () => {
+    const descriptions = Object.values(PROJECT_SEARCH_COPY).map((copy) => copy.description);
+    expect(new Set(descriptions).size).toBe(6);
+    for (const [slug, editorial] of Object.entries(PROJECT_SEARCH_COPY)) {
+      const result = projectPageCopy({ slug, title: "Project", description: "Fallback" });
+      expect(result.title).toContain(editorial.topic);
+      expect(result.description).toBe(editorial.description);
+      expect(result.description.length).toBeLessThanOrEqual(160);
+    }
+  });
+
+  it("falls back to CMS metadata for new projects and unexpected slugs", () => {
+    for (const slug of ["new-project", "constructor", "__proto__"]) {
+      const result = projectPageCopy({
+        slug,
+        title: "Example",
+        industry: "Healthcare",
+        description: "A booking platform.",
+      });
+      expect(result.title).toContain("Healthcare Case Study");
+      expect(result.description).toBe("A booking platform.");
+    }
   });
 
   it("keeps long project summaries inside the search snippet band", () => {
