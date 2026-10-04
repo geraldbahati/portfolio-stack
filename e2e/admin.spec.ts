@@ -211,7 +211,7 @@ test.describe
       await expect(page.getByText("e2e-admin@geraldbahati.dev").first()).toBeVisible();
       await expect(page.getByText("Fields: professionalTitle").first()).toBeVisible();
 
-      await page.getByPlaceholder("Search action, actor, or entity ID").fill("primary");
+      await page.getByLabel("Search activity").fill("primary");
       await page.getByRole("button", { name: "Apply filters" }).click();
       await expect(page.locator(".admin-activity-event")).not.toHaveCount(0);
       await expect(page.locator(".admin-activity-event code").first()).toHaveText("primary");
