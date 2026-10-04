@@ -31,18 +31,14 @@ export const adminMessagesRouter = {
       if (!canDeleteMessage(input.id, input.confirmation)) {
         throw new ORPCError("BAD_REQUEST", { message: "The confirmation does not match." });
       }
-      await deleteAdminMessage(input.id, context.session.user.email);
+      await deleteAdminMessage(input.id, context.actor);
       return { id: input.id, deleted: true };
     }
 
     if (input.action === "mark-read" || input.action === "mark-unread") {
-      await setAdminMessageRead(input.id, input.action === "mark-read", context.session.user.email);
+      await setAdminMessageRead(input.id, input.action === "mark-read", context.actor);
     } else {
-      await setAdminMessageArchived(
-        input.id,
-        input.action === "archive",
-        context.session.user.email,
-      );
+      await setAdminMessageArchived(input.id, input.action === "archive", context.actor);
     }
 
     return { id: input.id, deleted: false };

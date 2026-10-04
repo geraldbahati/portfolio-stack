@@ -1,13 +1,10 @@
-import { readFile } from "node:fs/promises";
-import { URL } from "node:url";
-import { createClient } from "@libsql/client";
-import { drizzle } from "drizzle-orm/libsql";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../index", () => ({ createDb: vi.fn() }));
 
 import { listPublishedProjects } from "../projects";
 import { project } from "../schema/project";
+import { createMemoryDb } from "../testing/memory-db";
 import {
   replaceAdminProjectChallenges,
   replaceAdminProjectGallery,
@@ -17,23 +14,14 @@ import {
 } from "./projects";
 
 type Database = NonNullable<Parameters<typeof replaceAdminProjectMetrics>[3]>;
-let client: ReturnType<typeof createClient>;
-let database: ReturnType<typeof drizzle>;
+let client: Awaited<ReturnType<typeof createMemoryDb>>["client"];
+let database: Database;
+const actor = { id: "user-1", email: "admin@example.com", requestId: "req-1" };
 const original = new Date("2026-01-01T00:00:00Z");
 const edited = new Date("2026-09-06T12:00:00Z");
 
 beforeEach(async () => {
-  client = createClient({ url: ":memory:" });
-  database = drizzle(client);
-  for (const file of [
-    "0000_motionless_korg.sql",
-    "0001_lethal_warhawk.sql",
-    "0003_sticky_rhodey.sql",
-  ]) {
-    await client.executeMultiple(
-      await readFile(new URL(`../migrations/${file}`, import.meta.url), "utf8"),
-    );
-  }
+  ({ client, db: database } = await createMemoryDb());
   await database.insert(project).values(
     ["edited", "untouched"].map((id) => ({
       id,
@@ -62,22 +50,22 @@ const mutations: Array<[string, (db: Database) => Promise<unknown>]> = [
       replaceAdminProjectMetrics(
         "edited",
         [{ value: "10", label: "Tests", icon: null }],
-        "admin",
+        actor,
         db,
       ),
   ],
-  ["remove metrics", (db) => replaceAdminProjectMetrics("edited", [], "admin", db)],
+  ["remove metrics", (db) => replaceAdminProjectMetrics("edited", [], actor, db)],
   [
     "challenges",
     (db) =>
       replaceAdminProjectChallenges(
         "edited",
         [{ title: "Challenge", content: "Solution" }],
-        "admin",
+        actor,
         db,
       ),
   ],
-  ["remove challenges", (db) => replaceAdminProjectChallenges("edited", [], "admin", db)],
+  ["remove challenges", (db) => replaceAdminProjectChallenges("edited", [], actor, db)],
   [
     "gallery",
     (db) =>
@@ -94,11 +82,11 @@ const mutations: Array<[string, (db: Database) => Promise<unknown>]> = [
             deviceType: null,
           },
         ],
-        "admin",
+        actor,
         db,
       ),
   ],
-  ["remove gallery", (db) => replaceAdminProjectGallery("edited", [], "admin", db)],
+  ["remove gallery", (db) => replaceAdminProjectGallery("edited", [], actor, db)],
   [
     "testimonial",
     (db) =>
@@ -111,18 +99,18 @@ const mutations: Array<[string, (db: Database) => Promise<unknown>]> = [
           authorCompany: null,
           authorImage: null,
         },
-        "admin",
+        actor,
         db,
       ),
   ],
-  ["remove testimonial", (db) => saveAdminProjectTestimonial("edited", null, "admin", db)],
+  ["remove testimonial", (db) => saveAdminProjectTestimonial("edited", null, actor, db)],
   [
     "presentation",
     (db) =>
       saveAdminProjectPresentation(
         "edited",
         { colorPalette: [], relatedProjectIds: [] },
-        "admin",
+        actor,
         db,
       ),
   ],
@@ -132,7 +120,7 @@ describe("case-study freshness", () => {
   it.each(mutations)(
     "%s edits update the public timestamp without changing creation or other projects",
     async (_name, mutate) => {
-      const db = database as unknown as Database;
+      const db = database;
       await mutate(db);
       const rows = await listPublishedProjects(db);
       expect(rows.find((row) => row.id === "edited")).toMatchObject({

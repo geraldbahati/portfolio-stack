@@ -56,6 +56,7 @@ export async function getAdminOverview(db: Database = createDb()) {
           actorEmail: auditLog.actorEmail,
           entityType: auditLog.entityType,
           entityId: auditLog.entityId,
+          outcome: auditLog.outcome,
           createdAt: auditLog.createdAt,
         })
         .from(auditLog)

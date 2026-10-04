@@ -148,3 +148,37 @@
 .admin-dashboard-activity time {
   text-align: right;
 }
+
+.admin-activity-event__marker.is-auth {
+  background: var(--admin-ink);
+  box-shadow: 0 0 0 4px rgba(23, 23, 21, 0.08);
+}
+
+.admin-activity-event__outcome {
+  padding: 0.18rem 0.4rem;
+  border: 1px solid var(--admin-line);
+  border-radius: 0.3rem;
+  color: var(--admin-green);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.admin-activity-event__outcome.is-pending {
+  color: var(--admin-orange);
+}
+
+.admin-activity-event__outcome.is-failed {
+  border-color: currentColor;
+  color: #b3261e;
+}
+
+.admin-filter-field--date {
+  flex-basis: 9.5rem;
+}
+
+.admin-activity-log header p a {
+  color: var(--admin-ink);
+  font-weight: 700;
+}

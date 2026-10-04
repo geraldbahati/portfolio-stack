@@ -59,26 +59,6 @@ function parseHttpsOrigin(raw: string): URL | null {
   }
 }
 
-function parseSentryDsn(raw: string): URL | null {
-  try {
-    const url = new URL(raw);
-    const projectId = url.pathname.split("/").filter(Boolean).at(-1);
-    if (
-      url.protocol !== "https:" ||
-      !url.username ||
-      url.password ||
-      !/^(?:[^.]+\.)?ingest(?:\.(?:us|de))?\.sentry\.io$/i.test(url.hostname) ||
-      !projectId ||
-      !/^\d+$/.test(projectId)
-    ) {
-      return null;
-    }
-    return url;
-  } catch {
-    return null;
-  }
-}
-
 function secretIsStrong(secret: string): boolean {
   const normalized = secret.toLowerCase();
   return (
@@ -288,34 +268,42 @@ export function validateProductionEnvironment(env: Environment): ReadinessIssue[
     );
   }
 
-  const sentryDsn = value(env, "SENTRY_DSN");
-  const publicSentryDsn = value(env, "PUBLIC_SENTRY_DSN");
-  if (!parseSentryDsn(sentryDsn)) {
-    add(issues, "error", "SENTRY_DSN", "must be a valid Sentry Cloud project DSN");
-  }
-  if (!parseSentryDsn(publicSentryDsn)) {
-    add(issues, "error", "PUBLIC_SENTRY_DSN", "must be a valid browser Sentry Cloud project DSN");
-  } else if (sentryDsn && sentryDsn !== publicSentryDsn) {
-    add(
-      issues,
-      "error",
-      "PUBLIC_SENTRY_DSN",
-      "must match SENTRY_DSN so the browser tunnel cannot relay to another project",
-    );
-  }
-  for (const key of ["SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT"]) {
-    if (!value(env, key)) {
-      add(issues, "error", key, "is required for production source-map uploads");
+  // Error tracking moved to PostHog. Leftover Sentry values are harmless but
+  // misleading, and the auth token is a credential that should be revoked.
+  for (const key of [
+    "SENTRY_DSN",
+    "PUBLIC_SENTRY_DSN",
+    "SENTRY_AUTH_TOKEN",
+    "SENTRY_ORG",
+    "SENTRY_PROJECT",
+  ]) {
+    if (value(env, key)) {
+      add(
+        issues,
+        "warning",
+        key,
+        "is no longer used; remove it (and revoke any Sentry auth token)",
+      );
     }
   }
 
   const posthogServerKey = value(env, "POSTHOG_PROJECT_KEY");
   const posthogBrowserKey = value(env, "PUBLIC_POSTHOG_KEY");
   if (!posthogServerKey.startsWith("phc_") || posthogServerKey.length < 20) {
-    add(issues, "error", "POSTHOG_PROJECT_KEY", "must be the PostHog project token");
+    add(
+      issues,
+      "error",
+      "POSTHOG_PROJECT_KEY",
+      "must be the PostHog project token; it carries API error tracking",
+    );
   }
   if (!posthogBrowserKey.startsWith("phc_") || posthogBrowserKey.length < 20) {
-    add(issues, "error", "PUBLIC_POSTHOG_KEY", "must be the browser PostHog project token");
+    add(
+      issues,
+      "error",
+      "PUBLIC_POSTHOG_KEY",
+      "must be the PostHog project token; it carries web and browser error tracking",
+    );
   } else if (posthogServerKey && posthogServerKey !== posthogBrowserKey) {
     add(
       issues,
@@ -326,6 +314,28 @@ export function validateProductionEnvironment(env: Environment): ReadinessIssue[
   }
   if (value(env, "POSTHOG_HOST") !== "https://eu.i.posthog.com") {
     add(issues, "error", "POSTHOG_HOST", "must target the PostHog EU ingestion host");
+  }
+  // Without uploaded source maps, minified browser stacks cannot be mapped
+  // back to the original code, so production builds must upload them.
+  if (!value(env, "POSTHOG_CLI_API_KEY")) {
+    add(
+      issues,
+      "error",
+      "POSTHOG_CLI_API_KEY",
+      "is required to upload production source maps to PostHog",
+    );
+  }
+  if (!/^\d+$/.test(value(env, "POSTHOG_CLI_PROJECT_ID"))) {
+    add(
+      issues,
+      "error",
+      "POSTHOG_CLI_PROJECT_ID",
+      "must be the numeric PostHog project ID that receives source maps",
+    );
+  }
+  const sourceMapHost = value(env, "POSTHOG_CLI_HOST");
+  if (sourceMapHost && sourceMapHost !== "https://eu.posthog.com") {
+    add(issues, "error", "POSTHOG_CLI_HOST", "must target the PostHog EU app host");
   }
   if (value(env, "PUBLIC_POSTHOG_HOST") !== "/gbx") {
     add(issues, "error", "PUBLIC_POSTHOG_HOST", 'must use the first-party "/gbx" proxy');

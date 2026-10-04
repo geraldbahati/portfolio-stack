@@ -1,3 +1,4 @@
+import type { ServerTelemetry } from "@portfolio-stack/analytics/server";
 import {
   recordContactEmailAccepted,
   recordContactSendFailure,
@@ -28,9 +29,18 @@ async function assertIpRateLimit(ip: string) {
   return success;
 }
 
+export type SubmitContactOptions = {
+  ip?: string;
+  /**
+   * Receives provider and configuration failures only. Validation, rate
+   * limiting, and bot checks are expected outcomes and are not reported.
+   */
+  telemetry: ServerTelemetry;
+};
+
 export async function submitContact(
   input: ContactSubmitInput,
-  ip = "unknown",
+  { ip = "unknown", telemetry }: SubmitContactOptions,
 ): Promise<ContactSubmitResult> {
   const parsed = contactSubmitSchema.safeParse(input);
   if (!parsed.success) {
@@ -82,6 +92,7 @@ export async function submitContact(
     return { ok: false, error: "Too many requests. Please try again in a few minutes." };
   }
   const submissionId = submission.id;
+  const reporter = telemetry.withContext({ submission_id: submissionId });
 
   // The inquiry was already accepted by the provider. Retrying the form should
   // neither send it again nor turn a delivery webhook failure into a new send.
@@ -91,6 +102,10 @@ export async function submitContact(
 
   if (!apiKey || !senderEmail || !recipientEmail) {
     if (env.ENVIRONMENT === "production") {
+      reporter.captureException(new Error("Contact email delivery is not configured"), {
+        operation: "contact.send_inquiry",
+        fingerprint: "contact.email_not_configured",
+      });
       await recordContactSendFailure(submissionId);
       return { ok: false, error: FAIL_MESSAGE };
     }
@@ -114,9 +129,13 @@ export async function submitContact(
     });
 
     if (!emailId) {
-      throw new Error("resend failed");
+      throw new Error("Resend did not accept the inquiry email");
     }
-  } catch {
+  } catch (error) {
+    reporter.captureException(error, {
+      operation: "contact.send_inquiry",
+      fingerprint: "contact.send_inquiry",
+    });
     await recordContactSendFailure(submissionId);
     return { ok: false, error: FAIL_MESSAGE };
   }
@@ -135,10 +154,15 @@ export async function submitContact(
       idempotencyKey: `contact-confirmation/${submissionId}`,
     });
     if (!confirmationId) {
-      console.error("[contact] Confirmation email was not accepted", { submissionId });
+      throw new Error("Resend did not accept the confirmation email");
     }
-  } catch {
-    console.error("[contact] Confirmation email request failed", { submissionId });
+  } catch (error) {
+    // The inquiry is already delivered; a missing acknowledgement is a warning.
+    reporter.captureException(error, {
+      operation: "contact.send_confirmation",
+      fingerprint: "contact.send_confirmation",
+      level: "warning",
+    });
   }
   return { ok: true, message: SUCCESS_MESSAGE };
 }

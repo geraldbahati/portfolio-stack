@@ -6,6 +6,29 @@
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "--cwd", "apps/web", "dev:bare", "--port", "4321"],
       "port": 4321
+    },
+    {
+      "name": "stack-e2e",
+      "runtimeExecutable": "env",
+      "runtimeArgs": [
+        "E2E_MODE=true",
+        "ENVIRONMENT=test",
+        "BETTER_AUTH_SECRET=e2e-only-secret-at-least-thirty-two-characters",
+        "CORS_ORIGIN=http://localhost:4421",
+        "SEED_ADMIN_SECRET=e2e-seed-secret-not-for-production",
+        "PUBLIC_TURNSTILE_SITE_KEY=",
+        "TURNSTILE_SECRET_KEY=",
+        "RESEND_API_KEY=",
+        "bun",
+        "run",
+        "--cwd",
+        "packages/infra",
+        "dev",
+        "--",
+        "--stage",
+        "e2e"
+      ],
+      "port": 4421
     }
   ]
 }

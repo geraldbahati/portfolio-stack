@@ -6,30 +6,29 @@ import { DEFAULT_STREAM_CUSTOMER, getStreamVideoUrls } from "@portfolio-stack/me
 import { z } from "zod";
 
 import { adminProcedure } from "../index";
-
-type StreamDirectUploadResponse = {
-  success: boolean;
-  errors?: { message?: string }[];
-  result?: {
-    uploadURL: string;
-    uid: string;
-  };
-};
-
-function streamConfig() {
-  const accountId = env.CLOUDFLARE_ACCOUNT_ID;
-  const apiToken = env.CLOUDFLARE_STREAM_API_TOKEN;
-  if (!accountId || !apiToken) {
-    throw new ORPCError("INTERNAL_SERVER_ERROR", {
-      message:
-        "Cloudflare Stream is not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_STREAM_API_TOKEN.",
-    });
-  }
-  return { accountId, apiToken };
-}
+import { runAuditedOperation } from "../operations";
+import {
+  createStreamDirectUpload,
+  deleteStreamVideo,
+  isDefinitiveStreamRejection,
+  STREAM_UID_PATTERN,
+  StreamApiError,
+  StreamConfigurationError,
+} from "../stream/cloudflare";
 
 function allowedStreamOrigins() {
   return streamAllowedOrigins(parseTrustedOrigins(env.CORS_ORIGIN));
+}
+
+/** Keep provider details out of the response; the cause stays attached for error tracking. */
+function streamFailure(error: unknown, message: string): never {
+  if (error instanceof StreamConfigurationError) {
+    throw new ORPCError("INTERNAL_SERVER_ERROR", { message: error.message, cause: error });
+  }
+  if (error instanceof StreamApiError && error.status === 404) {
+    throw new ORPCError("NOT_FOUND", { message: "The Stream video does not exist.", cause: error });
+  }
+  throw new ORPCError("INTERNAL_SERVER_ERROR", { message, cause: error });
 }
 
 export const streamRouter = {
@@ -42,81 +41,50 @@ export const streamRouter = {
         .optional(),
     )
     .handler(async ({ context, input }) => {
-      const { accountId, apiToken } = streamConfig();
-
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/direct_upload`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            maxDurationSeconds: input?.maxDurationSeconds ?? 3600,
-            allowedOrigins: allowedStreamOrigins(),
-          }),
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Stream] Failed to generate upload URL:", errorText);
-        throw new ORPCError("INTERNAL_SERVER_ERROR", {
-          message: "Failed to generate Stream upload URL",
+      let result: Awaited<ReturnType<typeof createStreamDirectUpload>>;
+      try {
+        result = await createStreamDirectUpload({
+          maxDurationSeconds: input?.maxDurationSeconds ?? 3600,
+          allowedOrigins: allowedStreamOrigins(),
         });
+      } catch (error) {
+        streamFailure(error, "Failed to generate Stream upload URL");
       }
 
-      const data = (await response.json()) as StreamDirectUploadResponse;
-      if (!data.success || !data.result) {
-        throw new ORPCError("INTERNAL_SERVER_ERROR", {
-          message: data.errors?.[0]?.message || "Stream API error",
-        });
-      }
-
-      await writeAuditLog({
-        actorEmail: context.session.user.email,
+      // Creating an upload slot changes nothing durable, so a single record
+      // after the fact is enough; unused slots expire on their own.
+      await writeAuditLog(context.actor, {
         action: "stream.direct_upload",
         entityType: "stream_video",
-        entityId: data.result.uid,
+        entityId: result.uid,
       });
 
       return {
-        uploadUrl: data.result.uploadURL,
-        uid: data.result.uid,
-        urls: getStreamVideoUrls(data.result.uid, DEFAULT_STREAM_CUSTOMER),
+        uploadUrl: result.uploadURL,
+        uid: result.uid,
+        urls: getStreamVideoUrls(result.uid, DEFAULT_STREAM_CUSTOMER),
       };
     }),
 
   deleteVideo: adminProcedure
-    .input(z.object({ uid: z.string().min(1) }))
+    .input(z.object({ uid: z.string().regex(STREAM_UID_PATTERN) }))
     .handler(async ({ context, input }) => {
-      const { accountId, apiToken } = streamConfig();
-
-      const response = await fetch(
-        `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream/${input.uid}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${apiToken}`,
+      try {
+        await runAuditedOperation(
+          {
+            actor: context.actor,
+            telemetry: context.telemetry,
+            action: "stream.delete",
+            entityType: "stream_video",
+            entityId: input.uid,
+            isDefinitiveFailure: isDefinitiveStreamRejection,
           },
-        },
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("[Stream] Failed to delete video:", errorText);
-        throw new ORPCError("INTERNAL_SERVER_ERROR", {
-          message: "Failed to delete Stream video",
-        });
+          () => deleteStreamVideo(input.uid),
+        );
+      } catch (error) {
+        if (error instanceof ORPCError) throw error;
+        streamFailure(error, "Failed to delete Stream video");
       }
-
-      await writeAuditLog({
-        actorEmail: context.session.user.email,
-        action: "stream.delete",
-        entityType: "stream_video",
-        entityId: input.uid,
-      });
 
       return { ok: true as const };
     }),

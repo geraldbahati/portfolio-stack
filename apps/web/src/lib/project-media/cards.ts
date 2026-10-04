@@ -37,12 +37,13 @@ export function bindProjectCards(root: HTMLElement, surface: Surface) {
 
     card.addEventListener(
       "project-card-viewed",
-      () => {
-        trackProjectCardViewed({
+      (event) => {
+        const recorded = trackProjectCardViewed({
           project_slug: card.dataset.projectId ?? "",
           project_title: card.dataset.projectTitle,
           surface,
         });
+        if (!recorded) event.preventDefault();
       },
       { signal: events.signal },
     );

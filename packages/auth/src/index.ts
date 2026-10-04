@@ -1,9 +1,12 @@
 import { createDb } from "@portfolio-stack/db";
+import { writeAuditLog } from "@portfolio-stack/db/audit";
 import * as schema from "@portfolio-stack/db/schema/auth";
 import { env } from "@portfolio-stack/env/server";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { createAuthMiddleware } from "better-auth/api";
 
+import { signInAuditRecord } from "./audit";
 import { cookieAttributes, parseTrustedOrigins } from "./origins";
 
 export { ADMIN_EMAILS, isAdminEnabled, isAllowedAdminEmail } from "./admin";
@@ -30,6 +33,32 @@ export function createAuth() {
       window: 60,
       max: 100,
       storage: "database",
+    },
+    hooks: {
+      after: createAuthMiddleware(async (ctx) => {
+        const record = signInAuditRecord({
+          path: ctx.path,
+          returned: ctx.context.returned,
+          newSession: ctx.context.newSession,
+          body: ctx.body,
+          headers: ctx.headers,
+        });
+        if (!record) return;
+
+        // A security record is worth a short wait, but an audit outage must
+        // never decide whether someone can sign in.
+        try {
+          await writeAuditLog(record.actor, record.entry, db);
+        } catch (error) {
+          console.error({
+            event: "auth_audit_failed",
+            action: record.entry.action,
+            outcome: record.entry.outcome,
+            request_id: record.actor.requestId,
+            reason: error instanceof Error ? error.name : "unknown",
+          });
+        }
+      }),
     },
     secret: env.BETTER_AUTH_SECRET,
     baseURL: env.BETTER_AUTH_URL,

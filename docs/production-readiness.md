@@ -26,8 +26,8 @@ Primary references:
 - [Cloudflare Worker rollbacks](https://developers.cloudflare.com/workers/versions-and-deployments/rollbacks/)
 - [Cloudflare Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/)
 - [Resend webhook verification](https://resend.com/docs/webhooks/verify-webhooks-requests)
-- [Sentry for Astro](https://docs.sentry.io/platforms/javascript/guides/astro/)
 - [PostHog for Astro](https://posthog.com/docs/libraries/astro)
+- [PostHog error tracking](https://posthog.com/docs/error-tracking)
 
 ## Required production configuration
 
@@ -53,13 +53,10 @@ RECIPIENT_EMAIL=contact@geraldbahati.dev
 CLOUDFLARE_ACCOUNT_ID=<account-id>
 CLOUDFLARE_STREAM_API_TOKEN=<least-privilege-stream-token>
 R2_BUCKET_NAME=portfolio-store
-SENTRY_DSN=<sentry-project-dsn>
-PUBLIC_SENTRY_DSN=<same-sentry-project-dsn>
-SENTRY_AUTH_TOKEN=<secret-source-map-upload-token>
-SENTRY_ORG=<organization-slug>
-SENTRY_PROJECT=<project-slug>
 POSTHOG_PROJECT_KEY=<posthog-project-token>
 PUBLIC_POSTHOG_KEY=<same-posthog-project-token>
+POSTHOG_CLI_API_KEY=<secret-source-map-upload-key>
+POSTHOG_CLI_PROJECT_ID=<numeric-project-id>
 POSTHOG_HOST=https://eu.i.posthog.com
 PUBLIC_POSTHOG_HOST=/gbx
 ```
@@ -76,7 +73,7 @@ openssl rand -base64 32
 
 In Resend, register `https://portfolio-api.geraldbahati.dev/webhooks/resend` for the delivery events used by the app (`email.sent`, `email.delivered`, `email.bounced`, and `email.failed`). Copy that endpoint's signing secret into `RESEND_WEBHOOK_SECRET`. The endpoint returns an error when the secret is missing and cryptographically rejects missing, stale, or invalid signatures.
 
-Follow [the observability guide](observability.md) for Sentry project/source-map credentials, consent-aware PostHog behaviour, and the live verification procedure.
+Follow [the observability guide](observability.md) for error tracking, consent-aware PostHog behaviour, the audit trail, and the live verification procedure.
 
 Run the safe configuration audit before every production plan:
 

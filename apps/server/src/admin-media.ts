@@ -1,4 +1,6 @@
-import { writeAuditLog } from "@portfolio-stack/db/audit";
+import type { ServerTelemetry } from "@portfolio-stack/analytics/server";
+import { runAuditedOperation } from "@portfolio-stack/api/operations";
+import type { AuditActor } from "@portfolio-stack/db/audit";
 import { env } from "@portfolio-stack/env/server";
 import {
   ADMIN_MEDIA_MAX_BYTES,
@@ -29,7 +31,10 @@ function decodeUploadHeader(request: Request, name: string, maxLength: number) {
   }
 }
 
-export async function handleAdminMediaUpload(request: Request, actorEmail: string) {
+export async function handleAdminMediaUpload(
+  request: Request,
+  audit: { actor: AuditActor; telemetry: ServerTelemetry },
+) {
   const contentType = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
   if (!contentType || !isAdminImageType(contentType)) {
     return jsonError("Choose an AVIF, GIF, JPEG, PNG, or WebP image.", 415);
@@ -52,29 +57,27 @@ export async function handleAdminMediaUpload(request: Request, actorEmail: strin
   if (!request.body) return jsonError("The image body is required.", 400);
 
   const key = createAdminMediaKey({ folder, fileName, contentType });
-  await env.MEDIA.put(key, request.body, {
-    httpMetadata: {
-      contentType,
-      cacheControl: "public, max-age=31536000, immutable",
-    },
-    customMetadata: {
-      alt,
-      originalName: fileName,
-    },
-  });
-
-  try {
-    await writeAuditLog({
-      actorEmail,
+  const body = request.body;
+  await runAuditedOperation(
+    {
+      ...audit,
       action: "media.upload",
       entityType: "media",
       entityId: key,
       metadata: { contentType, size: contentLength },
-    });
-  } catch (error) {
-    await env.MEDIA.delete(key);
-    throw error;
-  }
+    },
+    () =>
+      env.MEDIA.put(key, body, {
+        httpMetadata: {
+          contentType,
+          cacheControl: "public, max-age=31536000, immutable",
+        },
+        customMetadata: {
+          alt,
+          originalName: fileName,
+        },
+      }),
+  );
 
   return Response.json({ key }, { status: 201, headers: privateHeaders });
 }

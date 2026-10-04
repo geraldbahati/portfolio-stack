@@ -3,8 +3,9 @@ import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { sentryOptions } from "@portfolio-stack/analytics/sentry";
 import { createContext } from "@portfolio-stack/api/context";
+import { reportProcedureError } from "@portfolio-stack/api/errors";
+import { reconcileAuditedOperations } from "@portfolio-stack/api/operations";
 import { appRouter } from "@portfolio-stack/api/routers/index";
 import {
   createAuth,
@@ -15,22 +16,28 @@ import {
 } from "@portfolio-stack/auth";
 import { handleSeedProjects } from "@portfolio-stack/db/seeds/http";
 import { env } from "@portfolio-stack/env/server";
-import * as Sentry from "@sentry/cloudflare";
 import type { Context as HonoContext } from "hono";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { HTTPException } from "hono/http-exception";
 
 import { handleAdminMediaPreview, handleAdminMediaUpload } from "./admin-media";
+import type { AppEnv } from "./app-env";
+import { requestIdFor, workerTelemetry } from "./telemetry";
 import { handleResendWebhook } from "./webhooks";
 
-const app = new Hono();
+const app = new Hono<AppEnv>();
 const trustedOrigins = parseTrustedOrigins(env.CORS_ORIGIN);
 
 app.use("/*", async (c, next) => {
   const startedAt = performance.now();
+  const requestId = requestIdFor(c.req.raw);
+  c.set("requestId", requestId);
+  c.set("telemetry", workerTelemetry(c.executionCtx, { request_id: requestId }));
   try {
     await next();
   } finally {
+    c.header("X-Request-Id", requestId);
     // Cloudflare indexes object fields directly. Keep the request target to
     // the path only so query parameters and message contents cannot leak.
     console.log({
@@ -39,7 +46,7 @@ app.use("/*", async (c, next) => {
       path: c.req.path,
       status: c.res.status,
       duration_ms: Math.round(performance.now() - startedAt),
-      ray_id: c.req.header("cf-ray") ?? null,
+      request_id: requestId,
     });
   }
 });
@@ -68,13 +75,12 @@ app.use(
     allowHeaders: [
       "Content-Type",
       "Authorization",
-      "sentry-trace",
-      "baggage",
       "x-seed-secret",
       "x-media-folder",
       "x-media-filename",
       "x-media-alt",
     ],
+    exposeHeaders: ["X-Request-Id"],
     credentials: true,
   }),
 );
@@ -92,14 +98,22 @@ app.post("/internal/seed-projects", (c) => {
 
 app.post("/webhooks/resend", (c) => handleResendWebhook(c));
 
-async function getAdminActor(c: HonoContext) {
-  const context = await createContext({ context: c });
+function requestContext(c: HonoContext<AppEnv>) {
+  return createContext({
+    context: c,
+    telemetry: c.get("telemetry"),
+    requestId: c.get("requestId"),
+  });
+}
+
+async function getAdminActor(c: HonoContext<AppEnv>) {
+  const context = await requestContext(c);
   const user = context.session?.user;
   if (!user) return { ok: false as const, error: "Unauthorized" as const, status: 401 as const };
   if (!isAdminEnabled(env.ENABLE_ADMIN) || !isAllowedAdminEmail(user.email, env.ENVIRONMENT)) {
     return { ok: false as const, error: "Forbidden" as const, status: 403 as const };
   }
-  return { ok: true as const, user };
+  return { ok: true as const, user, telemetry: context.telemetry };
 }
 
 app.put("/internal/admin-media/upload", async (c) => {
@@ -112,7 +126,10 @@ app.put("/internal/admin-media/upload", async (c) => {
   if (!actor.ok) {
     return c.json({ error: actor.error }, actor.status, { "Cache-Control": "private, no-store" });
   }
-  return handleAdminMediaUpload(c.req.raw, actor.user.email);
+  return handleAdminMediaUpload(c.req.raw, {
+    actor: { id: actor.user.id, email: actor.user.email, requestId: c.get("requestId") },
+    telemetry: actor.telemetry,
+  });
 });
 
 app.get("/internal/admin-media/object", async (c) => {
@@ -145,29 +162,21 @@ app.get("/internal/admin-session", async (c) => {
   );
 });
 
-export const apiHandler = new OpenAPIHandler(appRouter, {
+const apiHandler = new OpenAPIHandler(appRouter, {
   plugins: [
     new OpenAPIReferencePlugin({
       schemaConverters: [new ZodToJsonSchemaConverter()],
     }),
   ],
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
+  clientInterceptors: [onError(reportProcedureError)],
 });
 
-export const rpcHandler = new RPCHandler(appRouter, {
-  interceptors: [
-    onError((error) => {
-      console.error(error);
-    }),
-  ],
+const rpcHandler = new RPCHandler(appRouter, {
+  clientInterceptors: [onError(reportProcedureError)],
 });
 
 app.use("/*", async (c, next) => {
-  const context = await createContext({ context: c });
+  const context = await requestContext(c);
 
   const rpcResult = await rpcHandler.handle(c.req.raw, {
     prefix: "/rpc",
@@ -199,8 +208,38 @@ app.get("/", (c) => {
   return c.text("OK");
 });
 
-export default Sentry.withSentry(
-  (workerEnv: { SENTRY_DSN?: string; ENVIRONMENT?: string }) =>
-    sentryOptions(workerEnv.SENTRY_DSN, workerEnv.ENVIRONMENT ?? "development"),
-  app,
-);
+// Anything that escapes a route: HTTP errors keep their status, and only
+// server faults reach error tracking.
+app.onError((error, c) => {
+  if (error instanceof HTTPException && error.status < 500) {
+    return error.getResponse();
+  }
+  c.get("telemetry").captureException(error, {
+    operation: `http.${c.req.method.toLowerCase()} ${c.req.routePath}`,
+    handled: false,
+    mechanism: "middleware",
+  });
+  if (error instanceof HTTPException) return error.getResponse();
+  return c.json({ error: "Internal Server Error" }, 500);
+});
+
+const worker: ExportedHandler<Env> = {
+  fetch: app.fetch,
+  // Resolves audit intents whose outcome was never recorded. See alchemy.run.ts for the schedule.
+  async scheduled(controller, _env, ctx) {
+    const telemetry = workerTelemetry(ctx, {
+      request_id: `cron-${controller.scheduledTime}`,
+      cron: controller.cron,
+    });
+    try {
+      await reconcileAuditedOperations({ telemetry });
+    } catch (error) {
+      telemetry.captureException(error, {
+        operation: "cron.audit_reconciliation",
+        handled: false,
+      });
+    }
+  },
+};
+
+export default worker;

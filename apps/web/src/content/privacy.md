@@ -38,7 +38,7 @@ When you interact with my Services, you may provide:
 
 ### 4.2 Information Collected Automatically
 
-I automatically process limited technical information needed to operate, secure, and diagnose the Services, such as IP address, browser type, operating system, user agent, approximate country or region, request metadata, and application error details. Sentry error monitoring is configured without default personal-information collection, and sensitive query parameters are removed before an error event is sent. I do not collect precise GPS location.
+I automatically process limited technical information needed to operate, secure, and diagnose the Services, such as IP address, browser type, operating system, user agent, approximate country or region, request metadata, and application error details. Application errors are reported to PostHog's error tracking through this site's own address. Error reports carry no person profile or location lookup, email addresses are removed from error messages, and page addresses keep only their path and campaign parameters. Without analytics consent, an error report uses a random identifier that lasts only for that page view and is never stored on your device. I do not collect precise GPS location.
 
 **Only after you accept analytics**, I additionally collect:
 
@@ -94,7 +94,7 @@ The portfolio currently uses service providers for:
 - **Email delivery:** Resend.
 - **Product analytics:** PostHog EU Cloud, only with your consent.
 - **Aggregate traffic measurement:** Cloudflare Web Analytics, cookieless and not dependent on consent.
-- **Error monitoring:** Sentry, used as essential operational monitoring with data minimisation and URL scrubbing.
+- **Error monitoring:** PostHog EU Cloud error tracking, used as essential operational monitoring with data minimisation and URL scrubbing.
 - **Media delivery:** Cloudflare Stream, Images, and R2.
 - **Authentication:** Better Auth for restricted administration features.
 

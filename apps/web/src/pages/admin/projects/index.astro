@@ -1,5 +1,4 @@
 ---
-import * as Sentry from "@sentry/astro";
 import AdminHeader from "../../../components/admin/AdminHeader.astro";
 import AdminNotice from "../../../components/admin/AdminNotice.astro";
 import AdminLayout from "../../../layouts/AdminLayout.astro";
@@ -36,9 +35,7 @@ try {
     pageSize: ADMIN_PROJECT_PAGE_SIZE,
   });
 } catch (cause) {
-  Sentry.captureException(cause, {
-    tags: { adminPage: "projects" },
-  });
+  Astro.locals.telemetry?.captureException(cause, { operation: "admin.projects.list" });
   dataUnavailable = true;
 }
 ---

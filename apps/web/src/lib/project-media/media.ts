@@ -372,9 +372,16 @@ export function bindProjectMedia(root: HTMLElement) {
         const player = players.get(card);
         const ratio = entry.intersectionRatio;
 
-        if (ratio > 0 && !card.dataset.viewed) {
+        // A listener cancels the event when the impression could not be
+        // recorded yet (analytics still pending), so a later sighting retries.
+        if (
+          ratio > 0 &&
+          !card.dataset.viewed &&
+          card.dispatchEvent(
+            new CustomEvent("project-card-viewed", { bubbles: true, cancelable: true }),
+          )
+        ) {
           card.dataset.viewed = "true";
-          card.dispatchEvent(new CustomEvent("project-card-viewed", { bubbles: true }));
         }
 
         if (!player) {

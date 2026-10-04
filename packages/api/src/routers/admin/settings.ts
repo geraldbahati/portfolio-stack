@@ -27,7 +27,7 @@ export const adminSettingsRouter = {
         whatsappUrl: input.whatsappUrl || null,
         githubUrl: input.githubUrl || null,
       },
-      context.session.user.email,
+      context.actor,
     ),
   ),
 };

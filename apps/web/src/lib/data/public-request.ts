@@ -1,4 +1,4 @@
-import * as Sentry from "@sentry/astro";
+import { captureWebException } from "../observability/server-telemetry";
 
 export class PublicDataUnavailableError extends Error {
   constructor(operation: string, cause: unknown) {
@@ -28,7 +28,10 @@ export async function fetchPublicData<T>(
     ]);
   } catch (cause) {
     const error = new PublicDataUnavailableError(operation, cause);
-    Sentry.captureException(error, { tags: { area: "public-data", operation } });
+    captureWebException(error, {
+      operation: `public-data.${operation}`,
+      fingerprint: `public-data.${operation}`,
+    });
     throw error;
   } finally {
     if (timeout !== undefined) clearTimeout(timeout);

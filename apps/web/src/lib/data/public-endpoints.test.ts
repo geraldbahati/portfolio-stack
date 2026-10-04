@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { loadPublishedProjects } = vi.hoisted(() => ({ loadPublishedProjects: vi.fn() }));
 vi.mock("./projects", () => ({ loadPublishedProjects }));
-vi.mock("@sentry/astro", () => ({ captureException: vi.fn() }));
+vi.mock("../observability/server-telemetry", () => ({ captureWebException: vi.fn() }));
 vi.mock("../seo/sitemap", () => ({ renderSitemap: () => "<urlset />" }));
 vi.mock("../seo/llms-txt", () => ({ renderLlmsTxt: () => "Project list" }));
 

@@ -6,7 +6,9 @@ export {
   subscribeToConsent,
 } from "./consent";
 export {
+  type CaptureOptions,
   type ContactChannel,
+  clearAnalyticsQueue,
   type Surface,
   setAnalyticsCapture,
   trackAnalyticsConsentUpdated,
@@ -23,4 +25,3 @@ export {
   trackScrollDepthReached,
   trackSectionViewed,
 } from "./events";
-export { captureServerEvent } from "./server";

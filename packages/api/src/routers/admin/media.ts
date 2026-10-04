@@ -1,10 +1,10 @@
 import { ORPCError } from "@orpc/server";
-import { writeAuditLog } from "@portfolio-stack/db/audit";
 import { env } from "@portfolio-stack/env/server";
 import { DEFAULT_MEDIA_ORIGIN } from "@portfolio-stack/media";
 import { publicMediaUrl } from "@portfolio-stack/media/admin";
 
 import { adminProcedure } from "../../index";
+import { runAuditedOperation } from "../../operations";
 import {
   adminMediaDeleteSchema,
   adminMediaListSchema,
@@ -51,18 +51,20 @@ export const adminMediaRouter = {
 
     const object = await env.MEDIA.head(input.key);
     if (!object) throw new ORPCError("NOT_FOUND");
-    const auditInput = {
-      actorEmail: context.session.user.email,
-      entityType: "media",
-      entityId: input.key,
-      metadata: {
-        contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
-        size: object.size,
+    await runAuditedOperation(
+      {
+        actor: context.actor,
+        telemetry: context.telemetry,
+        action: "media.delete",
+        entityType: "media",
+        entityId: input.key,
+        metadata: {
+          contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
+          size: object.size,
+        },
       },
-    };
-    await writeAuditLog({ ...auditInput, action: "media.delete.requested" });
-    await env.MEDIA.delete(input.key);
-    await writeAuditLog({ ...auditInput, action: "media.delete" });
+      () => env.MEDIA.delete(input.key),
+    );
     return { key: input.key, deleted: true };
   }),
 };
