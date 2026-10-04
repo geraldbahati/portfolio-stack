@@ -7,11 +7,23 @@ describe("admin activity contract", () => {
     expect(adminActivityListSchema.parse({})).toEqual({
       search: "",
       category: "all",
-      page: 1,
+      direction: "older",
       pageSize: 30,
+      includeTotal: false,
     });
     expect(adminActivityListSchema.safeParse({ pageSize: 101 }).success).toBe(false);
-    expect(adminActivityListSchema.safeParse({ category: "auth" }).success).toBe(false);
+    expect(adminActivityListSchema.safeParse({ category: "billing" }).success).toBe(false);
+    expect(adminActivityListSchema.safeParse({ category: "auth" }).success).toBe(true);
+  });
+
+  it("accepts calendar dates in order only", () => {
+    expect(
+      adminActivityListSchema.safeParse({ from: "2026-10-01", to: "2026-10-04" }).success,
+    ).toBe(true);
+    expect(
+      adminActivityListSchema.safeParse({ from: "2026-10-04", to: "2026-10-01" }).success,
+    ).toBe(false);
+    expect(adminActivityListSchema.safeParse({ from: "yesterday" }).success).toBe(false);
   });
 
   it("formats known actions and exposes only recognized metadata", () => {

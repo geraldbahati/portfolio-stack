@@ -4,6 +4,6 @@ import { publicProcedure } from "../index";
 
 export const contactRouter = {
   submit: publicProcedure.input(contactSubmitSchema).handler(async ({ input, context }) => {
-    return submitContact(input, context.ip);
+    return submitContact(input, { ip: context.ip, telemetry: context.telemetry });
   }),
 };

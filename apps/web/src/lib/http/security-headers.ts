@@ -20,7 +20,7 @@ export function contentSecurityPolicy(
     img-src 'self' blob: data: https:${extraOrigin ? ` ${extraOrigin}` : ""};
     font-src 'self' data:;
     media-src 'self' blob: https://media.geraldbahati.dev https://${STREAM_CUSTOMER};
-    connect-src 'self' https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://media.geraldbahati.dev https://${STREAM_CUSTOMER} https://challenges.cloudflare.com ${CF_INSIGHTS_BEACON}${extraOrigin ? ` ${extraOrigin}` : ""};
+    connect-src 'self' https://media.geraldbahati.dev https://${STREAM_CUSTOMER} https://challenges.cloudflare.com ${CF_INSIGHTS_BEACON}${extraOrigin ? ` ${extraOrigin}` : ""};
     frame-src 'self' https://challenges.cloudflare.com https://${STREAM_CUSTOMER};
     worker-src 'self' blob:;
     object-src 'none';

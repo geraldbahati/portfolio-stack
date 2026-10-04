@@ -17,7 +17,7 @@ few days.
 In scope: the two Workers in `apps/`, the shared packages in `packages/`, and
 the deployed site at `www.geraldbahati.dev` and `portfolio-api.geraldbahati.dev`.
 
-Out of scope: findings against Cloudflare, Resend, Sentry, or PostHog
+Out of scope: findings against Cloudflare, Resend, or PostHog
 themselves — report those to the relevant vendor. Also out of scope are
 missing headers with no demonstrated impact, and automated scanner output
 without a working exploit.

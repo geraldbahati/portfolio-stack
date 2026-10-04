@@ -1,10 +1,10 @@
-import { captureServerEvent } from "@portfolio-stack/analytics/server";
 import { verifyTurnstileToken as verifyTurnstile } from "@portfolio-stack/api/contact";
 import { updateContactStatusByEmailId } from "@portfolio-stack/db/contact";
 import { env } from "@portfolio-stack/env/server";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 
+import type { AppEnv } from "./app-env";
 import { verifyResendWebhook } from "./resend-webhook";
 
 const STATUS_BY_EVENT: Record<string, "sent" | "delivered" | "failed"> = {
@@ -39,13 +39,17 @@ export async function verifyTurnstileToken(token: string | undefined, ip?: strin
   });
 }
 
-export async function handleResendWebhook(context: Context) {
+export async function handleResendWebhook(context: Context<AppEnv>) {
+  const telemetry = context.get("telemetry");
   const payload = await context.req.text();
   const secret = env.RESEND_WEBHOOK_SECRET;
   const apiKey = env.RESEND_API_KEY;
 
   if (!secret || !apiKey) {
-    console.error("[webhook] Resend verification is not configured");
+    telemetry.captureException(new Error("Resend webhook verification is not configured"), {
+      operation: "webhook.resend",
+      fingerprint: "webhook.resend.not_configured",
+    });
     throw new HTTPException(503, { message: "Webhook unavailable" });
   }
 
@@ -78,13 +82,12 @@ export async function handleResendWebhook(context: Context) {
     matched = await updateContactStatusByEmailId(emailId, status);
   }
 
-  await captureServerEvent({
-    apiKey: env.POSTHOG_PROJECT_KEY,
-    host: env.POSTHOG_HOST,
-    event: "inquiry_email_status_changed",
+  // The delivery status is persisted above; analytics is optional and is sent
+  // after the response, so PostHog latency never delays the acknowledgement.
+  telemetry.capture("inquiry_email_status_changed", {
     distinctId: emailId,
+    insertId: verified.webhookId,
     properties: {
-      $insert_id: verified.webhookId,
       status: eventType.replace("email.", ""),
       email_id: emailId,
       matched_submission: matched,

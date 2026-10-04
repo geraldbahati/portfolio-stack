@@ -22,15 +22,12 @@ const validEnvironment = {
   CLOUDFLARE_ACCOUNT_ID: "cloudflare-account-id",
   CLOUDFLARE_STREAM_API_TOKEN: "cloudflare-stream-token",
   R2_BUCKET_NAME: "portfolio-media",
-  SENTRY_DSN: "https://public@o4500000000000000.ingest.de.sentry.io/4500000000000001",
-  PUBLIC_SENTRY_DSN: "https://public@o4500000000000000.ingest.de.sentry.io/4500000000000001",
-  SENTRY_AUTH_TOKEN: "sntrys_not_a_real_token_fixture_value",
-  SENTRY_ORG: "artlife-5r",
-  SENTRY_PROJECT: "portfolio",
   POSTHOG_PROJECT_KEY: "phc_production_project_token",
   PUBLIC_POSTHOG_KEY: "phc_production_project_token",
   POSTHOG_HOST: "https://eu.i.posthog.com",
   PUBLIC_POSTHOG_HOST: "/gbx",
+  POSTHOG_CLI_API_KEY: "phx_not_a_real_personal_key_fixture",
+  POSTHOG_CLI_PROJECT_ID: "12345",
 };
 
 describe("production readiness", () => {
@@ -121,17 +118,15 @@ describe("production readiness", () => {
     }
   });
 
-  it("requires matching Sentry and PostHog browser/server projects", () => {
+  it("requires matching PostHog browser/server projects", () => {
     const issues = validateProductionEnvironment({
       ...validEnvironment,
-      PUBLIC_SENTRY_DSN: "https://other@o4500000000000000.ingest.de.sentry.io/4500000000000002",
       PUBLIC_POSTHOG_KEY: "phc_another_project_token",
       PUBLIC_POSTHOG_HOST: "https://eu.i.posthog.com",
     });
 
     expect(issues).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ key: "PUBLIC_SENTRY_DSN", severity: "error" }),
         expect.objectContaining({ key: "PUBLIC_POSTHOG_KEY", severity: "error" }),
         expect.objectContaining({ key: "PUBLIC_POSTHOG_HOST", severity: "error" }),
       ]),
@@ -141,11 +136,6 @@ describe("production readiness", () => {
   it("fails when production monitoring configuration is incomplete", () => {
     const issues = validateProductionEnvironment({
       ...validEnvironment,
-      SENTRY_DSN: "",
-      PUBLIC_SENTRY_DSN: "",
-      SENTRY_AUTH_TOKEN: "",
-      SENTRY_ORG: "",
-      SENTRY_PROJECT: "",
       POSTHOG_PROJECT_KEY: "",
       PUBLIC_POSTHOG_KEY: "",
       POSTHOG_HOST: "",
@@ -153,11 +143,6 @@ describe("production readiness", () => {
     });
 
     for (const key of [
-      "SENTRY_DSN",
-      "PUBLIC_SENTRY_DSN",
-      "SENTRY_AUTH_TOKEN",
-      "SENTRY_ORG",
-      "SENTRY_PROJECT",
       "POSTHOG_PROJECT_KEY",
       "PUBLIC_POSTHOG_KEY",
       "POSTHOG_HOST",
@@ -176,5 +161,27 @@ describe("production readiness", () => {
 
     expect(issues.filter((issue) => issue.key === "SENDER_EMAIL")).toHaveLength(1);
     expect(issues.filter((issue) => issue.key === "RECIPIENT_EMAIL")).toHaveLength(1);
+  });
+
+  it("warns about leftover Sentry configuration without blocking a release", () => {
+    const issues = validateProductionEnvironment({
+      ...validEnvironment,
+      SENTRY_AUTH_TOKEN: "sntrys_not_a_real_token_fixture_value",
+    });
+    expect(issues).toEqual([
+      expect.objectContaining({ key: "SENTRY_AUTH_TOKEN", severity: "warning" }),
+    ]);
+  });
+
+  it("requires source-map upload credentials for the EU project", () => {
+    const issues = validateProductionEnvironment({
+      ...validEnvironment,
+      POSTHOG_CLI_API_KEY: "",
+      POSTHOG_CLI_PROJECT_ID: "not-a-number",
+      POSTHOG_CLI_HOST: "https://us.posthog.com",
+    });
+    for (const key of ["POSTHOG_CLI_API_KEY", "POSTHOG_CLI_PROJECT_ID", "POSTHOG_CLI_HOST"]) {
+      expect(issues).toContainEqual(expect.objectContaining({ key, severity: "error" }));
+    }
   });
 });

@@ -1,8 +1,8 @@
 import type { PostHog } from "posthog-js";
 import { getConsent } from "./consent";
-import { setAnalyticsCapture, trackAnalyticsConsentUpdated } from "./events";
-
-const SENSITIVE_QUERY_PARAMS = ["token", "secret", "key", "password", "api_key", "email"];
+import type { BrowserErrorIdentity } from "./error-tracking/browser";
+import { clearAnalyticsQueue, setAnalyticsCapture, trackAnalyticsConsentUpdated } from "./events";
+import { scrubUrlProperties } from "./privacy/url";
 
 const EXCLUDED_PATH_PREFIXES = ["/admin", "/private", "/login", "/dashboard"];
 
@@ -15,22 +15,7 @@ export type PostHogBrowserConfig = {
 
 let clientPromise: Promise<PostHog | null> | null = null;
 let browserConfig: PostHogBrowserConfig | null = null;
-
-function scrubUrl(rawUrl: unknown): string | undefined {
-  if (typeof rawUrl !== "string" || rawUrl.length === 0) {
-    return undefined;
-  }
-
-  try {
-    const url = new URL(rawUrl);
-    for (const param of SENSITIVE_QUERY_PARAMS) {
-      url.searchParams.delete(param);
-    }
-    return url.toString();
-  } catch {
-    return undefined;
-  }
-}
+let loadedClient: PostHog | null = null;
 
 export function configurePostHogBrowser(config: PostHogBrowserConfig) {
   browserConfig = config;
@@ -67,6 +52,8 @@ export function getPostHogClient(options?: { force?: boolean }): Promise<PostHog
           persistence: hasConsent ? "localStorage+cookie" : "memory",
           opt_out_capturing_by_default: !hasConsent,
           person_profiles: "identified_only",
+          // Exceptions go through the first-party reporter instead, so they are
+          // captured once, with or without analytics consent.
           capture_exceptions: false,
           disable_session_recording: true,
           capture_performance: true,
@@ -80,22 +67,22 @@ export function getPostHogClient(options?: { force?: boolean }): Promise<PostHog
               return null;
             }
 
-            const properties = { ...event.properties };
-            for (const property of ["$current_url", "$referrer"]) {
-              const scrubbed = scrubUrl(properties[property]);
-              if (scrubbed) {
-                properties[property] = scrubbed;
-              } else {
-                delete properties[property];
-              }
-            }
-
-            return { ...event, properties };
+            return {
+              ...event,
+              properties: scrubUrlProperties(event.properties),
+              ...(event.$set ? { $set: scrubUrlProperties(event.$set) } : {}),
+              ...(event.$set_once ? { $set_once: scrubUrlProperties(event.$set_once) } : {}),
+            };
           },
         });
 
-        setAnalyticsCapture((event, properties) => {
-          posthog.capture(event, properties);
+        loadedClient = posthog;
+        setAnalyticsCapture((event, properties, options) => {
+          posthog.capture(
+            event,
+            properties,
+            options?.timestamp ? { timestamp: options.timestamp } : undefined,
+          );
         });
 
         return posthog;
@@ -126,7 +113,23 @@ export function schedulePostHogInitialization() {
   }
 }
 
+/**
+ * The analytics identity, available only once the visitor has consented and
+ * the SDK is loaded. Error reports use it to link to the visitor's session.
+ */
+export function getAnalyticsIdentity(): BrowserErrorIdentity | null {
+  if (!loadedClient || getConsent() !== "accepted") return null;
+  return {
+    distinctId: loadedClient.get_distinct_id(),
+    sessionId: loadedClient.get_session_id(),
+  };
+}
+
 export async function applyConsent(decision: "accepted" | "rejected") {
+  if (decision === "rejected") {
+    clearAnalyticsQueue();
+  }
+
   if (typeof window === "undefined" || !isPostHogEnabled()) {
     return;
   }

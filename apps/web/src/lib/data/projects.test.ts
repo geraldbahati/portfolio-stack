@@ -6,7 +6,7 @@ const { listPublished, getBySlug, captureException } = vi.hoisted(() => ({
   captureException: vi.fn(),
 }));
 vi.mock("./orpc", () => ({ orpc: { projects: { listPublished, getBySlug } } }));
-vi.mock("@sentry/astro", () => ({ captureException }));
+vi.mock("../observability/server-telemetry", () => ({ captureWebException: captureException }));
 
 import { loadPublishedProject, loadPublishedProjects } from "./projects";
 import { clearPublicCache } from "./public-cache";

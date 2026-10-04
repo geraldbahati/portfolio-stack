@@ -1,6 +1,8 @@
 import { PUBLIC_SERVER_URL } from "astro:env/client";
 import { defineMiddleware } from "astro:middleware";
 
+import { sanitizeUrl } from "@portfolio-stack/analytics/privacy";
+
 import { parseAdminSessionUser } from "./lib/admin/session";
 import { cacheControlForPath, isImmutableAsset, isPrivatePath } from "./lib/http/cache";
 import { applySecurityHeaders } from "./lib/http/security-headers";
@@ -38,6 +40,10 @@ async function guardAdminRoute(context: Parameters<typeof onRequest>[0]) {
     }
 
     if (!authResponse.ok) {
+      context.locals.telemetry?.captureException(
+        new Error(`Admin session check failed with status ${authResponse.status}`),
+        { operation: "web.admin_session", fingerprint: "web.admin_session" },
+      );
       return new Response("Admin service unavailable", {
         status: 503,
         headers: { "Retry-After": "30" },
@@ -53,7 +59,8 @@ async function guardAdminRoute(context: Parameters<typeof onRequest>[0]) {
     }
 
     context.locals.admin = admin;
-  } catch {
+  } catch (error) {
+    context.locals.telemetry?.captureException(error, { operation: "web.admin_session" });
     return new Response("Admin service unavailable", {
       status: 503,
       headers: { "Retry-After": "30" },
@@ -71,13 +78,34 @@ export const onRequest = defineMiddleware(async (context, next) => {
     return context.redirect(canonical, 301);
   }
 
-  let response: Response;
+  // Prerendering runs in Node at build time, with no request to correlate and
+  // no Workers runtime, so the telemetry module (which needs one) loads lazily.
+  if (!context.isPrerendered) {
+    const { webTelemetry } = await import("./lib/observability/server-telemetry");
+    const requestId = context.request.headers.get("cf-ray") ?? crypto.randomUUID();
+    context.locals.requestId = requestId;
+    context.locals.telemetry = webTelemetry({
+      request_id: requestId,
+      $current_url: sanitizeUrl(context.url.href),
+    });
+  }
 
-  if (isAdminPath(context.url.pathname)) {
-    const guardedResponse = await guardAdminRoute(context);
-    response = guardedResponse ?? (await next());
-  } else {
-    response = await next();
+  let response: Response;
+  try {
+    if (isAdminPath(context.url.pathname)) {
+      const guardedResponse = await guardAdminRoute(context);
+      response = guardedResponse ?? (await next());
+    } else {
+      response = await next();
+    }
+  } catch (error) {
+    // Astro renders the 500 page after this rethrow; report the cause first.
+    context.locals.telemetry?.captureException(error, {
+      operation: `web.render ${context.routePattern}`,
+      handled: false,
+      mechanism: "middleware",
+    });
+    throw error;
   }
   const headers = new Headers(response.headers);
   const isDevelopment = import.meta.env.DEV;
@@ -107,6 +135,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     headers.set("CDN-Cache-Control", "private, no-store");
     headers.set("X-Robots-Tag", "noindex, nofollow, noarchive");
   }
+
+  if (context.locals.requestId) headers.set("X-Request-Id", context.locals.requestId);
 
   return new Response(response.body, {
     status: response.status,

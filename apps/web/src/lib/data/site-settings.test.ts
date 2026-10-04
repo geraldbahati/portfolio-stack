@@ -5,7 +5,7 @@ const { getPublic, captureException } = vi.hoisted(() => ({
   captureException: vi.fn(),
 }));
 vi.mock("./orpc", () => ({ orpc: { settings: { getPublic } } }));
-vi.mock("@sentry/astro", () => ({ captureException }));
+vi.mock("../observability/server-telemetry", () => ({ captureWebException: captureException }));
 
 import { clearPublicCache } from "./public-cache";
 import { loadPublicSiteSettings } from "./site-settings";

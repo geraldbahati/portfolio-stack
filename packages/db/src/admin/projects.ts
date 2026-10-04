@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, ne, or, sql } from "drizzle-orm";
-
+import { type AuditActor, auditValues } from "../audit";
 import { createDb } from "../index";
 import { auditLog } from "../schema/audit";
 import {
@@ -175,7 +175,7 @@ export async function getAdminProjectContent(id: string, db: Database = createDb
 
 export async function createAdminProject(
   input: AdminProjectWriteInput,
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
@@ -202,22 +202,22 @@ export async function createAdminProject(
       createdAt: now,
       updatedAt: now,
     }),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: "project.create",
-      entityType: "project",
-      entityId: input.id,
-      metadata: { title: input.title },
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: "project.create",
+        entityType: "project",
+        entityId: input.id,
+        metadata: { title: input.title },
+        createdAt: now,
+      }),
+    ),
   ]);
 }
 
 export async function updateAdminProject(
   id: string,
   input: Omit<AdminProjectWriteInput, "id">,
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
@@ -250,55 +250,55 @@ export async function updateAdminProject(
         target: projectDetails.projectId,
         set: { ...input.details, updatedAt: now },
       }),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: "project.update",
-      entityType: "project",
-      entityId: id,
-      metadata: { title: input.title },
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: "project.update",
+        entityType: "project",
+        entityId: id,
+        metadata: { title: input.title },
+        createdAt: now,
+      }),
+    ),
   ]);
 }
 
 export async function setAdminProjectPublication(
   id: string,
   isPublished: boolean,
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
   await db.batch([
     db.update(project).set({ isPublished, updatedAt: now }).where(eq(project.id, id)),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: isPublished ? "project.publish" : "project.unpublish",
-      entityType: "project",
-      entityId: id,
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: isPublished ? "project.publish" : "project.unpublish",
+        entityType: "project",
+        entityId: id,
+        createdAt: now,
+      }),
+    ),
   ]);
 }
 
 export async function replaceAdminProjectMetrics(
   projectId: string,
   items: AdminMetricInput[],
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
   const remove = db.delete(projectMetrics).where(eq(projectMetrics.projectId, projectId));
-  const audit = db.insert(auditLog).values({
-    id: crypto.randomUUID(),
-    actorEmail,
-    action: "project.metrics.replace",
-    entityType: "project",
-    entityId: projectId,
-    metadata: { count: items.length },
-    createdAt: now,
-  });
+  const audit = db.insert(auditLog).values(
+    auditValues(actor, {
+      action: "project.metrics.replace",
+      entityType: "project",
+      entityId: projectId,
+      metadata: { count: items.length },
+      createdAt: now,
+    }),
+  );
   const touch = touchProject(db, projectId, now);
   if (items.length === 0) return db.batch([remove, touch, audit]);
   return db.batch([
@@ -321,20 +321,20 @@ export async function replaceAdminProjectMetrics(
 export async function replaceAdminProjectChallenges(
   projectId: string,
   items: AdminChallengeInput[],
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
   const remove = db.delete(projectChallenges).where(eq(projectChallenges.projectId, projectId));
-  const audit = db.insert(auditLog).values({
-    id: crypto.randomUUID(),
-    actorEmail,
-    action: "project.challenges.replace",
-    entityType: "project",
-    entityId: projectId,
-    metadata: { count: items.length },
-    createdAt: now,
-  });
+  const audit = db.insert(auditLog).values(
+    auditValues(actor, {
+      action: "project.challenges.replace",
+      entityType: "project",
+      entityId: projectId,
+      metadata: { count: items.length },
+      createdAt: now,
+    }),
+  );
   const touch = touchProject(db, projectId, now);
   if (items.length === 0) return db.batch([remove, touch, audit]);
   return db.batch([
@@ -357,20 +357,20 @@ export async function replaceAdminProjectChallenges(
 export async function replaceAdminProjectGallery(
   projectId: string,
   items: AdminGalleryInput[],
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
   const remove = db.delete(projectGallery).where(eq(projectGallery.projectId, projectId));
-  const audit = db.insert(auditLog).values({
-    id: crypto.randomUUID(),
-    actorEmail,
-    action: "project.gallery.replace",
-    entityType: "project",
-    entityId: projectId,
-    metadata: { count: items.length },
-    createdAt: now,
-  });
+  const audit = db.insert(auditLog).values(
+    auditValues(actor, {
+      action: "project.gallery.replace",
+      entityType: "project",
+      entityId: projectId,
+      metadata: { count: items.length },
+      createdAt: now,
+    }),
+  );
   const touch = touchProject(db, projectId, now);
   if (items.length === 0) return db.batch([remove, touch, audit]);
   return db.batch([
@@ -393,18 +393,18 @@ export async function replaceAdminProjectGallery(
 export async function saveAdminProjectTestimonial(
   projectId: string,
   testimonial: AdminTestimonialInput | null,
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
-  const audit = db.insert(auditLog).values({
-    id: crypto.randomUUID(),
-    actorEmail,
-    action: testimonial ? "project.testimonial.save" : "project.testimonial.remove",
-    entityType: "project",
-    entityId: projectId,
-    createdAt: now,
-  });
+  const audit = db.insert(auditLog).values(
+    auditValues(actor, {
+      action: testimonial ? "project.testimonial.save" : "project.testimonial.remove",
+      entityType: "project",
+      entityId: projectId,
+      createdAt: now,
+    }),
+  );
   if (!testimonial) {
     return db.batch([
       db.delete(projectTestimonials).where(eq(projectTestimonials.projectId, projectId)),
@@ -428,7 +428,7 @@ export async function saveAdminProjectTestimonial(
 export async function saveAdminProjectPresentation(
   projectId: string,
   input: { colorPalette: ProjectColor[]; relatedProjectIds: string[] },
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
@@ -451,17 +451,17 @@ export async function saveAdminProjectPresentation(
         },
       }),
     touchProject(db, projectId, now),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: "project.presentation.save",
-      entityType: "project",
-      entityId: projectId,
-      metadata: {
-        colors: input.colorPalette.length,
-        relatedProjects: input.relatedProjectIds.length,
-      },
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: "project.presentation.save",
+        entityType: "project",
+        entityId: projectId,
+        metadata: {
+          colors: input.colorPalette.length,
+          relatedProjects: input.relatedProjectIds.length,
+        },
+        createdAt: now,
+      }),
+    ),
   ]);
 }

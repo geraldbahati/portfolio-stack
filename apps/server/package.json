@@ -17,7 +17,6 @@
     "@portfolio-stack/db": "workspace:*",
     "@portfolio-stack/env": "workspace:*",
     "@portfolio-stack/media": "workspace:*",
-    "@sentry/cloudflare": "^10.38.0",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
     "hono": "catalog:",

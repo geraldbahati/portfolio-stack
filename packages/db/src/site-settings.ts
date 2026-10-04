@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-
+import { type AuditActor, auditValues } from "./audit";
 import { createDb } from "./index";
 import { auditLog } from "./schema/audit";
 import { siteSettings } from "./schema/site-settings";
@@ -20,7 +20,7 @@ export async function getSiteSettings(db: Database = createDb()) {
 
 export async function saveSiteSettings(
   input: SiteSettingsWriteInput,
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const current = await getSiteSettings(db);
@@ -38,15 +38,15 @@ export async function saveSiteSettings(
         target: siteSettings.id,
         set: { ...input, updatedAt: now },
       }),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: "settings.update",
-      entityType: "site-settings",
-      entityId: SITE_SETTINGS_ID,
-      metadata: { changedFields },
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: "settings.update",
+        entityType: "site-settings",
+        entityId: SITE_SETTINGS_ID,
+        metadata: { changedFields },
+        createdAt: now,
+      }),
+    ),
   ]);
   return { changedFields, updatedAt: now };
 }

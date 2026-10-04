@@ -49,14 +49,14 @@ export const adminProjectsRouter = {
     if (await getAdminProject(input.id)) {
       throw new ORPCError("CONFLICT", { message: "A project with this slug already exists." });
     }
-    await createAdminProject(input, context.session.user.email);
+    await createAdminProject(input, context.actor);
     return { id: input.id };
   }),
   update: adminProcedure.input(adminProjectUpdateSchema).handler(async ({ input, context }) => {
     const existing = await getAdminProject(input.id);
     if (!existing) throw new ORPCError("NOT_FOUND");
     const { id, ...patch } = input;
-    await updateAdminProject(id, patch, context.session.user.email);
+    await updateAdminProject(id, patch, context.actor);
     return { id };
   }),
   publication: adminProcedure
@@ -81,7 +81,7 @@ export const adminProjectsRouter = {
           });
         }
       }
-      await setAdminProjectPublication(input.id, input.publish, context.session.user.email);
+      await setAdminProjectPublication(input.id, input.publish, context.actor);
       return { id: input.id, isPublished: input.publish };
     }),
   replaceMetrics: adminProcedure
@@ -105,7 +105,7 @@ export const adminProjectsRouter = {
       ) {
         throw new ORPCError("BAD_REQUEST", { message: "Confirm before clearing metrics." });
       }
-      await replaceAdminProjectMetrics(input.id, input.items, context.session.user.email);
+      await replaceAdminProjectMetrics(input.id, input.items, context.actor);
       return { count: input.items.length };
     }),
   replaceChallenges: adminProcedure
@@ -129,7 +129,7 @@ export const adminProjectsRouter = {
       ) {
         throw new ORPCError("BAD_REQUEST", { message: "Confirm before clearing challenges." });
       }
-      await replaceAdminProjectChallenges(input.id, input.items, context.session.user.email);
+      await replaceAdminProjectChallenges(input.id, input.items, context.actor);
       return { count: input.items.length };
     }),
   replaceGallery: adminProcedure
@@ -153,7 +153,7 @@ export const adminProjectsRouter = {
       ) {
         throw new ORPCError("BAD_REQUEST", { message: "Confirm before clearing the gallery." });
       }
-      await replaceAdminProjectGallery(input.id, input.items, context.session.user.email);
+      await replaceAdminProjectGallery(input.id, input.items, context.actor);
       return { count: input.items.length };
     }),
   saveTestimonial: adminProcedure
@@ -169,7 +169,7 @@ export const adminProjectsRouter = {
       if (!input.testimonial && input.confirmation !== input.id) {
         throw new ORPCError("BAD_REQUEST", { message: "The confirmation does not match." });
       }
-      await saveAdminProjectTestimonial(input.id, input.testimonial, context.session.user.email);
+      await saveAdminProjectTestimonial(input.id, input.testimonial, context.actor);
       return { present: input.testimonial !== null };
     }),
   savePresentation: adminProcedure
@@ -187,7 +187,7 @@ export const adminProjectsRouter = {
           colorPalette: input.colorPalette,
           relatedProjectIds: [...new Set(input.relatedProjectIds)],
         },
-        context.session.user.email,
+        context.actor,
       );
       return { saved: true };
     }),

@@ -74,6 +74,8 @@ export const server = Cloudflare.Worker("server", {
   // Keep local workers.dev URLs for development, but expose production only
   // through the canonical custom hostname.
   workersDev: !serverDomain,
+  // Resolves audit intents whose outcome was never recorded (apps/server `scheduled`).
+  crons: ["*/15 * * * *"],
   observability: {
     enabled: true,
     logs: { enabled: true, invocationLogs: true, headSamplingRate: 1, persist: true },
@@ -95,7 +97,7 @@ export const server = Cloudflare.Worker("server", {
     ENABLE_ADMIN_SEED: isE2e ? "true" : optionalString("ENABLE_ADMIN_SEED", "false"),
     SEED_ADMIN_SECRET: optionalRedacted("SEED_ADMIN_SECRET"),
     ENVIRONMENT: isE2e ? "test" : optionalString("ENVIRONMENT", "development"),
-    SENTRY_DSN: optionalRedacted("SENTRY_DSN"),
+    CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata(),
     POSTHOG_PROJECT_KEY: optionalString("POSTHOG_PROJECT_KEY"),
     POSTHOG_HOST: optionalString("POSTHOG_HOST", "https://eu.i.posthog.com"),
     RESEND_API_KEY: optionalRedacted("RESEND_API_KEY"),
@@ -151,7 +153,6 @@ export default Alchemy.Stack(
         PUBLIC_SERVER_URL: serverWorker.url.as<string>(),
         PUBLIC_POSTHOG_KEY: optionalString("PUBLIC_POSTHOG_KEY"),
         PUBLIC_POSTHOG_HOST: optionalString("PUBLIC_POSTHOG_HOST", "/gbx"),
-        PUBLIC_SENTRY_DSN: optionalString("PUBLIC_SENTRY_DSN"),
         PUBLIC_TURNSTILE_SITE_KEY: optionalString("PUBLIC_TURNSTILE_SITE_KEY"),
         PUBLIC_STREAM_CUSTOMER: optionalString(
           "PUBLIC_STREAM_CUSTOMER",
@@ -166,7 +167,11 @@ export default Alchemy.Stack(
           "media.geraldbahati.dev",
         ),
         PUBLIC_GOOGLE_SITE_VERIFICATION: optionalString("PUBLIC_GOOGLE_SITE_VERIFICATION"),
-        SENTRY_DSN: optionalString("SENTRY_DSN"),
+        CF_VERSION_METADATA: Cloudflare.Workers.VersionMetadata(),
+        MONITORING_RATE_LIMIT: Cloudflare.RateLimit("MONITORING_RATE_LIMIT", {
+          namespaceId: 1002,
+          simple: { limit: 20, period: 60 },
+        }),
         ENVIRONMENT: isE2e ? "test" : optionalString("ENVIRONMENT", "development"),
       },
       dev: {

@@ -1,15 +1,77 @@
 // @ts-check
-import sentry from "@sentry/astro";
+
+import { readdir, rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import posthogRollupPlugin from "@posthog/rollup-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig, envField } from "astro/config";
 
 import { siteImages } from "./vite-plugin-site-images";
 
-const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
 const isE2e = process.env.E2E_MODE === "true";
 
-/** @param {{ uploadSourceMaps?: boolean }} [options] */
-export function createAstroConfig({ uploadSourceMaps = true } = {}) {
+/** @typedef {import("@posthog/rollup-plugin").PostHogRollupPluginOptions} SourceMapUpload */
+
+/**
+ * Upload credentials for PostHog symbolication. These use posthog-cli's own
+ * variable names, so the same values work for the CLI. The personal API key is
+ * a build-time secret and must never be prefixed with PUBLIC_.
+ * @returns {SourceMapUpload | null}
+ */
+function sourceMapUploadFromEnv() {
+  const personalApiKey = process.env.POSTHOG_CLI_API_KEY;
+  const projectId = process.env.POSTHOG_CLI_PROJECT_ID;
+  if (!personalApiKey || !projectId) return null;
+  return {
+    personalApiKey,
+    projectId,
+    host: process.env.POSTHOG_CLI_HOST || "https://eu.posthog.com",
+  };
+}
+
+/**
+ * Generate hidden source maps for the browser bundle, inject PostHog chunk
+ * IDs, upload the maps, and delete them before the assets are deployed. Only
+ * the client environment is processed: the Worker bundle is not minified and
+ * its maps would never be served. The plugin's global `config` hook is
+ * dropped for the same reason; the client environment enables maps below.
+ * @param {SourceMapUpload} upload
+ * @returns {import("vite").Plugin}
+ */
+function posthogSourceMaps(upload) {
+  const { config: _globalConfig, ...plugin } = /** @type {import("vite").Plugin} */ (
+    posthogRollupPlugin({
+      ...upload,
+      sourcemaps: { releaseName: "portfolio-web", deleteAfterUpload: true, ...upload.sourcemaps },
+    })
+  );
+  return { ...plugin, applyToEnvironment: (environment) => environment.name === "client" };
+}
+
+/**
+ * Maps are uploaded, never served. The plugin deletes the maps it uploads, but
+ * Astro inlines some small scripts into HTML after bundling and leaves their
+ * maps behind, so sweep whatever remains in the client output.
+ * @returns {import("astro").AstroIntegration}
+ */
+function stripPublishedSourceMaps() {
+  return {
+    name: "portfolio:strip-published-source-maps",
+    hooks: {
+      async "astro:build:done"({ dir, logger }) {
+        const root = fileURLToPath(dir);
+        const maps = (await readdir(root, { recursive: true })).filter((file) =>
+          file.endsWith(".map"),
+        );
+        await Promise.all(maps.map((file) => rm(`${root}/${file}`, { force: true })));
+        if (maps.length > 0) logger.info(`removed ${maps.length} unpublished source maps`);
+      },
+    },
+  };
+}
+
+/** @param {{ sourceMapUpload?: SourceMapUpload | null }} [options] */
+export function createAstroConfig({ sourceMapUpload = sourceMapUploadFromEnv() } = {}) {
   return defineConfig({
     output: "server",
     // Browser checks exercise the portfolio, without the development audit overlay.
@@ -22,20 +84,6 @@ export function createAstroConfig({ uploadSourceMaps = true } = {}) {
       inlineStylesheets: "always",
     },
     integrations: [
-      sentry({
-        telemetry: false,
-        enabled: { client: false, server: true },
-        bundleSizeOptimizations: {
-          excludeDebugStatements: true,
-          excludeReplayIframe: true,
-          excludeReplayShadowDom: true,
-          excludeReplayWorker: true,
-        },
-        org: process.env.SENTRY_ORG || "artlife-5r",
-        project: process.env.SENTRY_PROJECT || "portfolio",
-        authToken: sentryAuthToken,
-        sourcemaps: { disable: !uploadSourceMaps || !sentryAuthToken },
-      }),
       {
         name: "portfolio:keep-page-script",
         hooks: {
@@ -44,6 +92,7 @@ export function createAstroConfig({ uploadSourceMaps = true } = {}) {
           },
         },
       },
+      ...(sourceMapUpload ? [stripPublishedSourceMaps()] : []),
     ],
     env: {
       schema: {
@@ -61,11 +110,6 @@ export function createAstroConfig({ uploadSourceMaps = true } = {}) {
           access: "public",
           context: "client",
           default: "/gbx",
-        }),
-        PUBLIC_SENTRY_DSN: envField.string({
-          access: "public",
-          context: "client",
-          optional: true,
         }),
         PUBLIC_TURNSTILE_SITE_KEY: envField.string({
           access: "public",
@@ -92,6 +136,12 @@ export function createAstroConfig({ uploadSourceMaps = true } = {}) {
           context: "client",
           optional: true,
         }),
+        // Labels server-side error reports; read at runtime from the Worker.
+        ENVIRONMENT: envField.string({
+          access: "public",
+          context: "server",
+          default: "development",
+        }),
       },
     },
     image: {
@@ -112,17 +162,22 @@ export function createAstroConfig({ uploadSourceMaps = true } = {}) {
         include: [
           "@orpc/client",
           "@orpc/client/fetch",
-          "@sentry/astro",
           "better-auth/client",
           "hls.js",
           "@portfolio-stack/analytics > posthog-js",
+          "@portfolio-stack/analytics > @posthog/core/error-tracking",
           "zod",
         ],
       },
       build: {
         chunkSizeWarningLimit: 600,
       },
-      plugins: [siteImages(), tailwindcss()],
+      ...(sourceMapUpload ? { environments: { client: { build: { sourcemap: "hidden" } } } } : {}),
+      plugins: [
+        siteImages(),
+        tailwindcss(),
+        ...(sourceMapUpload ? [posthogSourceMaps(sourceMapUpload)] : []),
+      ],
     },
   });
 }

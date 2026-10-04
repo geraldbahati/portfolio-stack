@@ -19,7 +19,7 @@ packages/
   db/       Drizzle schema, data access, seeds
   auth/     Better-Auth factory, admin allowlist
   env/      typed env for server + web
-  analytics/ PostHog, Sentry, consent
+  analytics/ PostHog analytics, error tracking, privacy filtering, consent
   media/    Cloudflare Stream / R2 / Images URL logic
   infra/    alchemy.run.ts — the source of truth for bindings
   config/   shared tsconfig base
@@ -103,6 +103,7 @@ Grouped by concern. No loose files unless nothing groups with them.
 | `lib/motion/` | DOM effects — scramble, grid pattern, deferred media |
 | `lib/project-media/` | project video/poster logic |
 | `lib/admin/` | admin-only helpers |
+| `lib/observability/` | web Worker error tracking and the `/monitoring` relay |
 
 `lib/navigation.ts` sits flat because nothing else groups with it. That is
 allowed; inventing a one-file directory is not.

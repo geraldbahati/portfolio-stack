@@ -1,5 +1,6 @@
 import { ORPCError, os } from "@orpc/server";
 import { isAdminEnabled, isAllowedAdminEmail } from "@portfolio-stack/auth/admin";
+import type { AuditActor } from "@portfolio-stack/db/audit";
 import { env } from "@portfolio-stack/env/server";
 
 import type { Context } from "./context";
@@ -34,9 +35,18 @@ const requireAdmin = o.middleware(async ({ context, next }) => {
     throw new ORPCError("FORBIDDEN");
   }
 
+  // Derived once from the session already loaded for this request, so audit
+  // writes never need another lookup to know who acted.
+  const actor: AuditActor = {
+    id: context.session.user.id,
+    email: context.session.user.email,
+    requestId: context.requestId,
+  };
+
   return next({
     context: {
       session: context.session,
+      actor,
     },
   });
 });

@@ -4,6 +4,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./context": "./src/context.ts",
+    "./errors": "./src/errors.ts",
+    "./operations": "./src/operations/index.ts",
     "./contact": "./src/contact/index.ts",
     "./routers/index": "./src/routers/index.ts",
     "./routers/projects": "./src/routers/projects.ts",
@@ -22,6 +24,7 @@
     "@orpc/openapi": "catalog:",
     "@orpc/server": "catalog:",
     "@orpc/zod": "catalog:",
+    "@portfolio-stack/analytics": "workspace:*",
     "@portfolio-stack/auth": "workspace:*",
     "@portfolio-stack/db": "workspace:*",
     "@portfolio-stack/env": "workspace:*",

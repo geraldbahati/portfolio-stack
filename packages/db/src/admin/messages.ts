@@ -1,5 +1,5 @@
 import { and, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
-
+import { type AuditActor, auditValues } from "../audit";
 import { createDb } from "../index";
 import { auditLog } from "../schema/audit";
 import { type ContactSubmissionStatus, contactSubmission } from "../schema/contact";
@@ -113,7 +113,7 @@ export async function getAdminMessage(id: string, db: Database = createDb()) {
 export async function setAdminMessageRead(
   id: string,
   read: boolean,
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
@@ -122,21 +122,21 @@ export async function setAdminMessageRead(
       .update(contactSubmission)
       .set({ readAt: read ? now : null })
       .where(eq(contactSubmission.id, id)),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: read ? "message.read" : "message.unread",
-      entityType: "contact_submission",
-      entityId: id,
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: read ? "message.read" : "message.unread",
+        entityType: "contact_submission",
+        entityId: id,
+        createdAt: now,
+      }),
+    ),
   ]);
 }
 
 export async function setAdminMessageArchived(
   id: string,
   archived: boolean,
-  actorEmail: string,
+  actor: AuditActor,
   db: Database = createDb(),
 ) {
   const now = new Date();
@@ -145,32 +145,28 @@ export async function setAdminMessageArchived(
       .update(contactSubmission)
       .set({ archivedAt: archived ? now : null })
       .where(eq(contactSubmission.id, id)),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: archived ? "message.archive" : "message.restore",
-      entityType: "contact_submission",
-      entityId: id,
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: archived ? "message.archive" : "message.restore",
+        entityType: "contact_submission",
+        entityId: id,
+        createdAt: now,
+      }),
+    ),
   ]);
 }
 
-export async function deleteAdminMessage(
-  id: string,
-  actorEmail: string,
-  db: Database = createDb(),
-) {
+export async function deleteAdminMessage(id: string, actor: AuditActor, db: Database = createDb()) {
   const now = new Date();
   return db.batch([
     db.delete(contactSubmission).where(eq(contactSubmission.id, id)),
-    db.insert(auditLog).values({
-      id: crypto.randomUUID(),
-      actorEmail,
-      action: "message.delete",
-      entityType: "contact_submission",
-      entityId: id,
-      createdAt: now,
-    }),
+    db.insert(auditLog).values(
+      auditValues(actor, {
+        action: "message.delete",
+        entityType: "contact_submission",
+        entityId: id,
+        createdAt: now,
+      }),
+    ),
   ]);
 }

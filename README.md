@@ -47,7 +47,7 @@ absolute URL.
 | Infrastructure | Alchemy (TypeScript, not YAML) |
 | Monorepo | Turborepo + Bun workspaces |
 | Tests | Vitest (unit), Playwright (end to end) |
-| Observability | Sentry, PostHog (consent-gated) |
+| Observability | PostHog error tracking, PostHog analytics (consent-gated), Workers Logs |
 
 ## Layout
 
@@ -60,7 +60,7 @@ packages/
   auth/        Better Auth setup and the admin allowlist
   db/          Drizzle schema, migrations, seeds
   media/       R2 helpers and upload validation
-  analytics/   PostHog and Sentry configuration
+  analytics/   PostHog analytics, error tracking, privacy filtering
   env/         Validated environment access
   infra/       Alchemy stack definition
   config/      Shared TypeScript and tooling config
@@ -113,7 +113,7 @@ the deploy. Do not run a separate migration command.
 - [Production runbook](docs/production-readiness.md) — release procedure, configuration, rollback
 - [Code structure](docs/code-structure.md) — how the packages fit together and why
 - [Admin architecture](docs/admin-architecture.md) — the dashboard's boundaries and data flow
-- [Observability](docs/observability.md) — Sentry, PostHog, and consent behaviour
+- [Observability](docs/observability.md) — error tracking, analytics, audit trail, and consent
 
 ## License
 

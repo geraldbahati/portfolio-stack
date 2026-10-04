@@ -11,20 +11,27 @@
     "./events": {
       "default": "./src/events.ts"
     },
-    "./server": {
-      "default": "./src/server.ts"
-    },
     "./posthog-client": {
       "default": "./src/posthog-client.ts"
     },
-    "./sentry": {
-      "default": "./src/sentry.ts"
+    "./privacy": {
+      "default": "./src/privacy/url.ts"
+    },
+    "./error-tracking/browser": {
+      "default": "./src/error-tracking/browser.ts"
+    },
+    "./error-tracking/report": {
+      "default": "./src/error-tracking/report.ts"
+    },
+    "./server": {
+      "default": "./src/server/index.ts"
     }
   },
   "scripts": {
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
+    "@posthog/core": "^1.48.6",
     "posthog-js": "^1.407.2",
     "zod": "catalog:"
   },
