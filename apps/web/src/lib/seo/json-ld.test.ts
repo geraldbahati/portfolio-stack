@@ -114,34 +114,20 @@ describe("projectWorkJsonLd", () => {
     expect(published).toContain('"uploadDate":"2025-12-15T12:00:00Z"');
     expect(published).toContain('"dateCreated":"2026-01-01T00:00:00Z"');
   });
-  it("nests a Review only when a testimonial exists", () => {
-    const without = JSON.stringify(
+  it("never marks a case study up as reviewed", () => {
+    // Google rejects a Review whose itemReviewed is a CreativeWork, and the
+    // testimonial is self-serving; it stays visible on the page instead.
+    const markup = JSON.stringify(
       projectWorkJsonLd({
         slug: "webline-store",
         name: "Webline Store",
         description: "Edge storefront",
       }),
     );
-    expect(without).not.toContain('"@type":"Review"');
-    expect(without).toContain(`${SITE_URL}/projects/webline-store#work`);
-
-    const withReview = JSON.stringify(
-      projectWorkJsonLd({
-        slug: "webline-store",
-        name: "Webline Store",
-        description: "Edge storefront",
-        image: "https://media.geraldbahati.dev/webline/store-01-hero.webp",
-        testimonial: {
-          quote: "Gerald shipped the platform on time.",
-          authorName: "Klaus Hering",
-          authorRole: "Sales Management",
-          authorCompany: "Rapid GmbH",
-        },
-      }),
-    );
-    expect(withReview).toContain('"@type":"Review"');
-    expect(withReview).toContain("Gerald shipped the platform on time.");
-    expect(withReview).not.toContain("aggregateRating");
+    expect(markup).not.toContain('"@type":"Review"');
+    expect(markup).not.toContain("aggregateRating");
+    expect(markup).not.toContain("itemReviewed");
+    expect(markup).toContain(`${SITE_URL}/projects/webline-store#work`);
   });
 });
 
