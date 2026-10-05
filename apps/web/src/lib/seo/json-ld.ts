@@ -314,12 +314,6 @@ export type ProjectWorkInput = {
   videoPoster?: string | null;
   /** Actual video publication time, not the case-study database creation time. */
   videoUploadDate?: string;
-  testimonial?: {
-    quote: string;
-    authorName: string;
-    authorRole?: string | null;
-    authorCompany?: string | null;
-  } | null;
 };
 
 export function projectWorkJsonLd(input: ProjectWorkInput) {
@@ -372,21 +366,10 @@ export function projectWorkJsonLd(input: ProjectWorkInput) {
     };
   }
 
-  if (input.testimonial?.quote) {
-    work.review = {
-      "@type": "Review",
-      reviewBody: input.testimonial.quote,
-      author: {
-        "@type": "Person",
-        name: input.testimonial.authorName,
-        ...(input.testimonial.authorRole ? { jobTitle: input.testimonial.authorRole } : {}),
-        ...(input.testimonial.authorCompany
-          ? { worksFor: { "@type": "Organization", name: input.testimonial.authorCompany } }
-          : {}),
-      },
-      itemReviewed: { "@id": workId },
-    };
-  }
+  // Client testimonials stay visible on the page but are not marked up as a
+  // Review. Google's review snippets reject CreativeWork as the reviewed type
+  // ("Invalid object type for field '<parent_node>'"), and a testimonial
+  // published by the person reviewed is a self-serving review either way.
 
   return graph([
     ...baseNodes(),
